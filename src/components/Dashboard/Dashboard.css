@@ -1,0 +1,68 @@
+/* src/components/Dashboard.css */
+
+/* src/components/Dashboard.css */
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: #f8f9fa;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    /* Sidebar width */
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid #dee2e6;
+    background-color: white;
+    z-index: 1040;
+    transition: width 0.3s;
+}
+
+/* .dashboard-container {
+    width: 100%;
+    transition: all 0.3s ease;
+} */
+
+/* Optional card padding, colors etc can go here */
+
+/* Responsive sidebar collapse */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 80px;
+    }
+
+    .dashboard-container {
+        margin-left: 80px !important;
+    }
+}
+
+
+
+/* src/components/Dashboard.css */
+
+.dashboard-container {
+    background-color: #f9fafb;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.card {
+    border-radius: 1rem !important;
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.btn-outline-success,
+.btn-outline-primary,
+.btn-outline-danger,
+.btn-outline-info {
+    font-size: 0.875rem;
+}
