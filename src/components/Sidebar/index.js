@@ -36,6 +36,17 @@ const Sidebar = ({ collapsed }) => {
             ],
         },
 
+        // Sessions Management (new)
+        {
+            icon: <FaClock />,
+            label: 'Season Management',
+            key: 'season',
+            isDropdown: true,
+            subItems: [
+                { label: 'All Season', path: '/season' },
+                // { label: 'Add New Session', path: '/sessions/add' },
+            ],
+        },
         // Episodes Management
         {
             icon: <FaBriefcase />,
@@ -50,20 +61,8 @@ const Sidebar = ({ collapsed }) => {
             ],
         },
 
-        // Sessions Management (new)
-        {
-            icon: <FaClock />,
-            label: 'Sessions Management',
-            key: 'sessions',
-            isDropdown: true,
-            subItems: [
-                { label: 'All Sessions', path: '/sessions' },
-                // { label: 'Add New Session', path: '/sessions/add' },
-            ],
-        },
-
         { icon: <FaTasks />, label: 'Banner Management', path: '/banners' },
-        { icon: <FaTasks />, label: 'User Management', path: '/users' },
+        { icon: <FaTasks />, label: 'User Management', path: '/users-list' },
     ];
 
     const handleLogout = () => {

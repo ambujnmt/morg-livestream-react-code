@@ -178,8 +178,8 @@ const Sessions = () => {
     return (
         <div className="container mt-4">
             <div className="d-flex justify-content-between mb-3 align-items-center">
-                <h3>Sessions</h3>
-                <button className="btn btn-primary" onClick={() => openModal()}>Create Session</button>
+                <h3>Season</h3>
+                <button className="btn btn-primary" onClick={() => openModal()}>Create Season</button>
             </div>
 
             {/* Search */}

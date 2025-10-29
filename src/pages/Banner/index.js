@@ -12,7 +12,7 @@ const Banner = () => {
     const perPage = 5;
 
     const [showModal, setShowModal] = useState(false);
-    const [previewImage, setPreviewImage] = useState(null); // ✅ Image preview state
+    const [previewImage, setPreviewImage] = useState(null);
     const [formData, setFormData] = useState({ id: '', headline: '', series_id: '', image: null });
 
     const API_BASE = 'https://site2demo.in/livestreaming/api';

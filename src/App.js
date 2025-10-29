@@ -15,6 +15,7 @@ import Episode from './pages/Episode';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import User from './pages/Users';
 
 function App() {
   return (
@@ -69,7 +70,7 @@ function App() {
         />
 
         <Route
-          path="/sessions"
+          path="/season"
           element={
             <PrivateRoute>
               <Layout>
@@ -86,6 +87,18 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <Episode />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Users Route */}
+        <Route
+          path="/users-list"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <User />
               </Layout>
             </PrivateRoute>
           }
