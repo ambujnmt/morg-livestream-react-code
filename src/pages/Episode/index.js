@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Table, Form } from "react-bootstrap";
+import { Button, Table, Form, Spinner } from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
 import swal from "sweetalert2";
 import axios from "axios";
@@ -7,7 +7,6 @@ import "react-toastify/dist/ReactToastify.css";
 
 const Episode = () => {
     const baseURL = "https://site2demo.in/livestreaming/api";
-    const fileBaseURL = "https://site2demo.in/livestreaming/";
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -15,13 +14,17 @@ const Episode = () => {
     const [videoPreview, setVideoPreview] = useState(null);
     const [seriesId, setSeriesId] = useState("");
     const [sessionId, setSessionId] = useState("");
+    const [categoryId, setCategoryId] = useState("");
     const [seriesList, setSeriesList] = useState([]);
     const [sessionsList, setSessionsList] = useState([]);
+    const [categoriesList, setCategoriesList] = useState([]);
     const [episodesList, setEpisodesList] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editVideoId, setEditVideoId] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [toastId, setToastId] = useState(null);
 
     useEffect(() => {
         fetchDropdownData();
@@ -30,12 +33,15 @@ const Episode = () => {
 
     const fetchDropdownData = async () => {
         try {
-            const [seriesRes, sessionsRes] = await Promise.all([
+            const [seriesRes, sessionsRes, categoriesRes] = await Promise.all([
                 axios.get(`${baseURL}/series-list`),
                 axios.get(`${baseURL}/sessions-list`),
+                axios.get(`${baseURL}/categories-list`),
             ]);
+
             setSeriesList(seriesRes.data.data || []);
             setSessionsList(sessionsRes.data.data || []);
+            setCategoriesList(categoriesRes.data.data || []);
         } catch (error) {
             console.error("Error fetching dropdown data:", error);
         }
@@ -61,7 +67,6 @@ const Episode = () => {
 
     const handleSearchChange = (e) => setSearchTerm(e.target.value);
 
-    // Flatten nested videos for table
     const filteredEpisodes = episodesList
         .flatMap((series) =>
             series.sessions.flatMap((session) =>
@@ -78,31 +83,55 @@ const Episode = () => {
             video.title.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
+    // ✅ Custom toast function to prevent duplicates
+    const showToast = (message, type = "success") => {
+        if (!toast.isActive(toastId)) {
+            const id =
+                type === "success"
+                    ? toast.success(message, {
+                        autoClose: 2500,
+                        toastId: "unique",
+                        theme: "colored",
+                    })
+                    : toast.error(message, {
+                        autoClose: 2500,
+                        toastId: "unique",
+                        theme: "colored",
+                    });
+            setToastId(id);
+        }
+    };
+
     const handleFormSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
 
         const formData = new FormData();
         formData.append("title", title);
         formData.append("description", description);
         formData.append("series_id", seriesId);
         formData.append("session_id", sessionId);
+        formData.append("category_id", categoryId);
         if (videoFile) formData.append("video_file", videoFile);
 
         try {
             if (isEditing) {
                 formData.append("video_id", editVideoId);
                 await axios.post(`${baseURL}/videos-update`, formData);
-                toast.success("Video updated successfully");
+                showToast("Video updated successfully", "success");
             } else {
                 await axios.post(`${baseURL}/videos-upload`, formData);
-                toast.success("Video uploaded successfully");
+                showToast("Video uploaded successfully", "success");
             }
+
             setShowModal(false);
             resetForm();
             fetchVideos();
         } catch (error) {
             console.error("Error uploading video:", error);
-            toast.error("Error uploading video");
+            showToast("Error uploading video", "error");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -113,16 +142,30 @@ const Episode = () => {
         setVideoPreview(null);
         setSeriesId("");
         setSessionId("");
+        setCategoryId("");
         setIsEditing(false);
         setEditVideoId(null);
     };
 
-    // ✅ FIXED: Series & Session preselect in edit mode
+    const handleSeriesChange = (e) => {
+        const selectedId = e.target.value;
+        setSeriesId(selectedId);
+
+        const selectedSeries = seriesList.find(
+            (s) => String(s.id) === String(selectedId)
+        );
+
+        if (selectedSeries && selectedSeries.category) {
+            setCategoryId(String(selectedSeries.category.id));
+        } else {
+            setCategoryId("");
+        }
+    };
+
     const handleEdit = (video) => {
         let detectedSeriesId = video.series_id;
         let detectedSessionId = video.session_id;
 
-        // If missing, find parent series/session IDs
         if (!detectedSeriesId || !detectedSessionId) {
             episodesList.forEach((series) => {
                 series.sessions.forEach((session) => {
@@ -141,6 +184,7 @@ const Episode = () => {
         setDescription(video.description);
         setSeriesId(String(detectedSeriesId || ""));
         setSessionId(String(detectedSessionId || ""));
+        setCategoryId(String(video.category_id || ""));
         setIsEditing(true);
         setEditVideoId(video.video_id);
         setVideoPreview(video.video_url ? video.video_url : null);
@@ -162,11 +206,11 @@ const Episode = () => {
                         const formData = new FormData();
                         formData.append("video_id", videoId);
                         await axios.post(`${baseURL}/videos-delete`, formData);
-                        toast.success("Video deleted successfully");
+                        showToast("Video deleted successfully", "success");
                         fetchVideos();
                     } catch (error) {
                         console.error("Error deleting video:", error);
-                        toast.error("Error deleting video");
+                        showToast("Error deleting video", "error");
                     }
                 }
             });
@@ -192,7 +236,7 @@ const Episode = () => {
                         setShowModal(true);
                     }}
                 >
-                    Upload Video
+                    Add New Episode
                 </Button>
             </div>
 
@@ -227,11 +271,7 @@ const Episode = () => {
                                 <td>{formatReleaseDate(video.release_date)}</td>
                                 <td>
                                     {video.video_url ? (
-                                        <a
-                                            href={video.video_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
+                                        <a href={video.video_url} target="_blank" rel="noreferrer">
                                             View
                                         </a>
                                     ) : (
@@ -250,9 +290,7 @@ const Episode = () => {
                                     <Button
                                         variant="danger"
                                         size="sm"
-                                        onClick={() =>
-                                            handleDelete(video.video_id)
-                                        }
+                                        onClick={() => handleDelete(video.video_id)}
                                     >
                                         Delete
                                     </Button>
@@ -289,23 +327,81 @@ const Episode = () => {
                         </div>
                         <div className="modal-body">
                             <form onSubmit={handleFormSubmit}>
+                                {/* Series Dropdown */}
+                                <div className="mb-3">
+                                    <label className="form-label">Series name</label>
+                                    <select
+                                        className="form-select"
+                                        value={seriesId}
+                                        onChange={handleSeriesChange}
+                                        required
+                                    >
+                                        <option value="">Select Series</option>
+                                        {seriesList.map((series) => (
+                                            <option key={series.id} value={series.id}>
+                                                {series.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Category Display */}
+                                <div className="mb-3">
+                                    <label className="form-label">Category</label>
+                                    {categoryId ? (
+                                        <div className="form-control bg-light">
+                                            {categoriesList.find(
+                                                (cat) => String(cat.id) === String(categoryId)
+                                            )?.name || "N/A"}
+                                        </div>
+                                    ) : (
+                                        <div className="form-control bg-light text-muted">
+                                            Select a series to see its category
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Session Dropdown */}
+                                <div className="mb-3">
+                                    <label className="form-label">Season name</label>
+                                    <select
+                                        className="form-select"
+                                        value={sessionId}
+                                        onChange={(e) => setSessionId(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Select Session</option>
+                                        {sessionsList.map((session) => (
+                                            <option key={session.id} value={session.id}>
+                                                {session.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <div className="mb-3">
                                     <label className="form-label">Title</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={title}
-                                        onChange={(e) =>
-                                            setTitle(e.target.value)
-                                        }
+                                        onChange={(e) => setTitle(e.target.value)}
                                         required
                                     />
                                 </div>
 
                                 <div className="mb-3">
-                                    <label className="form-label">
-                                        Video File
-                                    </label>
+                                    <label className="form-label">Description</label>
+                                    <textarea
+                                        className="form-control"
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                        required
+                                    ></textarea>
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label">Video File</label>
                                     <input
                                         type="file"
                                         className="form-control"
@@ -320,80 +416,26 @@ const Episode = () => {
                                             src={videoPreview}
                                             controls
                                             width="100%"
-                                            style={{
-                                                borderRadius: "5px",
-                                            }}
+                                            style={{ borderRadius: "5px" }}
                                         ></video>
                                     </div>
                                 )}
 
-                                <div className="mb-3">
-                                    <label className="form-label">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        className="form-control"
-                                        value={description}
-                                        onChange={(e) =>
-                                            setDescription(e.target.value)
-                                        }
-                                        required
-                                    ></textarea>
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Series</label>
-                                    <select
-                                        className="form-select"
-                                        value={seriesId}
-                                        onChange={(e) =>
-                                            setSeriesId(e.target.value)
-                                        }
-                                        required
-                                    >
-                                        <option value="">Select Series</option>
-                                        {seriesList.map((series) => (
-                                            <option
-                                                key={series.id || series.series_id}
-                                                value={series.id || series.series_id}
-                                            >
-                                                {series.title || series.series_title}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">
-                                        Session
-                                    </label>
-                                    <select
-                                        className="form-select"
-                                        value={sessionId}
-                                        onChange={(e) =>
-                                            setSessionId(e.target.value)
-                                        }
-                                        required
-                                    >
-                                        <option value="">
-                                            Select Session
-                                        </option>
-                                        {sessionsList.map((session) => (
-                                            <option
-                                                key={session.id || session.session_id}
-                                                value={
-                                                    session.id || session.session_id
-                                                }
-                                            >
-                                                {session.title ||
-                                                    session.session_title}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <Button type="submit" variant="primary">
-                                    {isEditing ? "Update" : "Upload"}
+                                <Button type="submit" variant="primary" disabled={loading}>
+                                    {loading ? (
+                                        <>
+                                            <Spinner
+                                                animation="border"
+                                                size="sm"
+                                                className="me-2"
+                                            />
+                                            Please wait...
+                                        </>
+                                    ) : isEditing ? (
+                                        "Update"
+                                    ) : (
+                                        "Upload"
+                                    )}
                                 </Button>
                             </form>
                         </div>
@@ -402,7 +444,18 @@ const Episode = () => {
             </div>
 
             {showModal && <div className="modal-backdrop fade show"></div>}
-            <ToastContainer />
+
+            {/* ✅ ToastContainer only once and safe config */}
+            <ToastContainer
+                position="top-right"
+                autoClose={2500}
+                hideProgressBar={false}
+                closeOnClick
+                pauseOnHover
+                draggable
+                theme="colored"
+                newestOnTop
+            />
         </div>
     );
 };
