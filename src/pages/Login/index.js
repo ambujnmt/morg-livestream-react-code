@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = "http://127.0.0.1:8000/api/admin-login";
+const API_URL = "https://site2demo.in/livestreaming/api/admin-login";
 
 const Login = () => {
     const [email, setEmail] = useState('');
