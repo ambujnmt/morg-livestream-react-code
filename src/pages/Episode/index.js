@@ -252,9 +252,10 @@ const Episode = () => {
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Title</th>
+
                         <th>Series</th>
-                        <th>Session</th>
+                        <th>Season</th>
+                        <th>Title</th>
                         <th>Release Date</th>
                         <th>Video</th>
                         <th>Actions</th>
@@ -265,9 +266,9 @@ const Episode = () => {
                         filteredEpisodes.map((video, index) => (
                             <tr key={video.video_id}>
                                 <td>{index + 1}</td>
-                                <td>{video.title}</td>
                                 <td>{video.series_title}</td>
                                 <td>{video.session_title}</td>
+                                <td>{video.title}</td>
                                 <td>{formatReleaseDate(video.release_date)}</td>
                                 <td>
                                     {video.video_url ? (
