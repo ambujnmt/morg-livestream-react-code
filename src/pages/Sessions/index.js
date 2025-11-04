@@ -186,7 +186,7 @@ const Sessions = () => {
             <input
                 type="text"
                 className="form-control mb-3"
-                placeholder="Search sessions..."
+                placeholder="Search season..."
                 value={search}
                 onChange={(e) => {
                     setSearch(e.target.value);

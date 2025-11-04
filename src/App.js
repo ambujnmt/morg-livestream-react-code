@@ -12,10 +12,11 @@ import Banner from './pages/Banner';
 import Series from './pages/Series';
 import Sessions from './pages/Sessions';
 import Episode from './pages/Episode';
+import Plan from './pages/Plan';
+import User from './pages/Users';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import User from './pages/Users';
 
 function App() {
   return (
@@ -35,7 +36,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
         <Route
           path="/category"
           element={
@@ -46,7 +46,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
         <Route
           path="/banners"
           element={
@@ -57,7 +56,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
         <Route
           path="/series"
           element={
@@ -68,7 +66,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
         <Route
           path="/season"
           element={
@@ -79,8 +76,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
-        {/* Episode Route */}
         <Route
           path="/episodes"
           element={
@@ -91,14 +86,22 @@ function App() {
             </PrivateRoute>
           }
         />
-
-        {/* Users Route */}
         <Route
           path="/users-list"
           element={
             <PrivateRoute>
               <Layout>
                 <User />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/plans"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Plan />
               </Layout>
             </PrivateRoute>
           }

@@ -17,7 +17,7 @@ const Banner = () => {
 
     const API_BASE = 'https://site2demo.in/livestreaming/api';
 
-    // ✅ Fetch all banners
+    // Fetch all banners
     const fetchBanners = async () => {
         setLoading(true);
         try {
@@ -32,7 +32,7 @@ const Banner = () => {
         setLoading(false);
     };
 
-    // ✅ Fetch all series for dropdown
+    // Fetch all series for dropdown
     const fetchSeries = async () => {
         try {
             const res = await axios.get(`${API_BASE}/series-list`, {
@@ -45,33 +45,32 @@ const Banner = () => {
         }
     };
 
-    // ✅ Run on mount
+    // Run on mount
     useEffect(() => {
         fetchBanners();
         fetchSeries();
     }, []);
 
-    // ✅ Handle search
-    const filteredBanners = banners.filter(b =>
+    // Filter banners based on search
+    const filteredBanners = banners.filter((b) =>
         (b.headline || '').toLowerCase().includes(search.toLowerCase())
     );
 
-    // ✅ Pagination
+    // Pagination
     const indexOfLast = currentPage * perPage;
     const indexOfFirst = indexOfLast - perPage;
     const currentBanners = filteredBanners.slice(indexOfFirst, indexOfLast);
     const totalPages = Math.ceil(filteredBanners.length / perPage);
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-    // ✅ Open modal (Create or Edit)
+    // Open modal for create or edit
     const openModal = (banner = { id: '', headline: '', series_id: '', image: null }) => {
         setFormData({
             id: banner.id || '',
             headline: banner.headline || '',
-            series_id: banner.series_id || banner.series?.id || '',
+            series_id: banner.series?.id || banner.series_id || '',
             image: null,
         });
-        // ✅ Set preview to existing image if editing
         setPreviewImage(banner.image || null);
         setShowModal(true);
     };
@@ -80,45 +79,34 @@ const Banner = () => {
         setPreviewImage(null);
     };
 
-    // ✅ Handle input changes (with preview)
+    // Handle input change and preview
     const handleChange = (e) => {
         const { name, value, files } = e.target;
         if (files && files[0]) {
             const file = files[0];
             setFormData({ ...formData, [name]: file });
-            setPreviewImage(URL.createObjectURL(file)); // ✅ show preview instantly
+            setPreviewImage(URL.createObjectURL(file));
         } else {
             setFormData({ ...formData, [name]: value });
         }
     };
 
-    // ✅ Create or Update banner
+    // Handle create or update using POST method
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const data = new FormData();
-            data.append('headline', formData.headline);
+            data.append('title', formData.headline);
             data.append('series_id', Number(formData.series_id));
-
             if (formData.image instanceof File) {
                 data.append('image', formData.image);
             }
-
             if (formData.id) {
-                // Update existing banner
                 data.append('id', formData.id);
-                await axios.post(`${API_BASE}/banners-update`, data, {
-                    headers: { Accept: 'application/json' },
-                });
-                toast.success('Banner updated successfully');
-            } else {
-                // Create new banner
-                await axios.post(`${API_BASE}/create-banners`, data, {
-                    headers: { Accept: 'application/json' },
-                });
-                toast.success('Banner created successfully');
             }
 
+            await axios.post(`${API_BASE}/banners-update`, data);
+            toast.success('Banner saved successfully');
             fetchBanners();
             closeModal();
         } catch (error) {
@@ -127,7 +115,7 @@ const Banner = () => {
         }
     };
 
-    // ✅ Delete banner
+    // Handle delete
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this banner?')) return;
         try {
@@ -227,7 +215,10 @@ const Banner = () => {
                 <nav>
                     <ul className="pagination">
                         {[...Array(totalPages)].map((_, i) => (
-                            <li key={i + 1} className={`page-item ${i + 1 === currentPage ? 'active' : ''}`}>
+                            <li
+                                key={i + 1}
+                                className={`page-item ${i + 1 === currentPage ? 'active' : ''}`}
+                            >
                                 <button className="page-link" onClick={() => paginate(i + 1)}>
                                     {i + 1}
                                 </button>
@@ -237,7 +228,7 @@ const Banner = () => {
                 </nav>
             )}
 
-            {/* Modal */}
+            {/* Modal for create/edit */}
             {showModal && (
                 <div
                     className="modal show fade d-block"
@@ -297,7 +288,7 @@ const Banner = () => {
                                             onChange={handleChange}
                                         />
 
-                                        {/* ✅ Show image preview */}
+                                        {/* Show preview if available */}
                                         {previewImage && (
                                             <div className="text-center">
                                                 <img
@@ -313,6 +304,7 @@ const Banner = () => {
                                     </div>
                                 </div>
 
+                                {/* Modal footer with buttons */}
                                 <div className="modal-footer">
                                     <button
                                         type="button"
