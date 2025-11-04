@@ -1,36 +1,44 @@
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
+
+
+const API_URL = "https://site2demo.in/livestreaming/api";
 
 const User = () => {
-    // Mock data: Replace with your API fetch
-    const mockUsers = [
-        { id: 1, name: "John Doe", email: "john@example.com", status: true, joinedOn: "2023-01-12" },
-        { id: 2, name: "Jane Smith", email: "jane@example.com", status: false, joinedOn: "2023-02-03" },
-        { id: 3, name: "Alice Brown", email: "alice@example.com", status: true, joinedOn: "2023-03-22" },
-        { id: 4, name: "Bob White", email: "bob@example.com", status: true, joinedOn: "2023-04-15" },
-        { id: 5, name: "Charlie Green", email: "charlie@example.com", status: false, joinedOn: "2023-05-10" },
-        { id: 6, name: "Diana Black", email: "diana@example.com", status: true, joinedOn: "2023-06-08" },
-        { id: 7, name: "Edward Gray", email: "edward@example.com", status: false, joinedOn: "2023-07-20" },
-        { id: 8, name: "Fiona Blue", email: "fiona@example.com", status: true, joinedOn: "2023-08-12" },
-        { id: 9, name: "George Yellow", email: "george@example.com", status: true, joinedOn: "2023-09-05" },
-        { id: 10, name: "Helen Orange", email: "helen@example.com", status: false, joinedOn: "2023-10-28" },
-        // Add more if needed
-    ];
-
-    const [users, setUsers] = useState(mockUsers);
+    const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(true);
 
-    // Pagination config
     const usersPerPage = 5;
 
-    // Filter users based on search term
+    // Fetch users from the API
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await fetch(`${API_URL}/users-list`);
+                const data = await response.json();
+                if (data.status) {
+                    setUsers(data.data);
+                } else {
+                    alert("Failed to fetch users");
+                }
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
     const filteredUsers = users.filter(
         (user) =>
             user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Calculate pagination
     const indexOfLastUser = currentPage * usersPerPage;
     const indexOfFirstUser = indexOfLastUser - usersPerPage;
     const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
@@ -38,6 +46,99 @@ const User = () => {
 
     // Change page
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    // Toggle user status (Active/Inactive)
+    const toggleStatus = async (userId) => {
+        try {
+            const response = await fetch(`${API_URL}/toggle-status`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id: userId }),
+            });
+
+            const data = await response.json();
+            if (data.status) {
+                // Update the user status in the UI after toggling
+                setUsers((prevUsers) =>
+                    prevUsers.map((user) =>
+                        user.id === userId ? { ...user, status: !user.status } : user
+                    )
+                );
+            } else {
+                alert("Failed to update status");
+            }
+        } catch (error) {
+            console.error("Error toggling status:", error);
+        }
+    };
+
+    // Function to delete a user
+    const deleteUser = async (userId) => {
+        const result = await Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!",
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const formData = new FormData();
+                formData.append("id", userId);
+                formData.append("date", "1 Nov 2025");
+
+                const response = await fetch(`${API_URL}/user-delete`, {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                    },
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (data.status) {
+
+                    setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+
+                    Swal.fire({
+                        title: "Deleted!",
+                        text: "The user has been deleted.",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Error!",
+                        text: "There was an issue deleting the user.",
+                        icon: "error",
+                        confirmButtonText: "Try again",
+                    });
+                }
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                Swal.fire({
+                    title: "Error!",
+                    text: "Something went wrong. Please try again later.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+            }
+        }
+    };
+
+    const formatDate = (dateString) => {
+        const options = {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+        };
+        return new Date(dateString).toLocaleDateString("en-GB", options);
+    };
 
     return (
         <div className="container my-4">
@@ -51,48 +152,68 @@ const User = () => {
                 value={searchTerm}
                 onChange={(e) => {
                     setSearchTerm(e.target.value);
-                    setCurrentPage(1); // reset to page 1 on search
+                    setCurrentPage(1);
                 }}
             />
 
+            {/* Loading Spinner */}
+            {loading && (
+                <div className="text-center">
+                    <div className="spinner-border" role="status">
+                        <span className="sr-only">Loading...</span>
+                    </div>
+                </div>
+            )}
+
             {/* User Table */}
-            <table className="table table-striped table-bordered">
-                <thead className="table-dark">
-                    <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">Email</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Joined On</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {currentUsers.length === 0 ? (
+            {!loading && (
+                <table className="table table-striped table-bordered">
+                    <thead className="table-dark">
                         <tr>
-                            <td colSpan="5" className="text-center">
-                                No users found
-                            </td>
+                            <th scope="col">#</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Joined On</th>
+                            <th scope="col">Actions</th>
                         </tr>
-                    ) : (
-                        currentUsers.map((user, idx) => (
-                            <tr key={user.id}>
-                                <th scope="row">{indexOfFirstUser + idx + 1}</th>
-                                <td>{user.name}</td>
-                                <td>{user.email}</td>
-                                <td>
-                                    <span
-                                        className={`badge ${user.status ? "bg-success" : "bg-secondary"
-                                            }`}
-                                    >
-                                        {user.status ? "Active" : "Inactive"}
-                                    </span>
+                    </thead>
+                    <tbody>
+                        {currentUsers.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" className="text-center">
+                                    No users found
                                 </td>
-                                <td>{new Date(user.joinedOn).toLocaleDateString()}</td>
                             </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
+                        ) : (
+                            currentUsers.map((user, idx) => (
+                                <tr key={user.id}>
+                                    <th scope="row">{indexOfFirstUser + idx + 1}</th>
+                                    <td>{user.name}</td>
+                                    <td>{user.email}</td>
+                                    <td>
+                                        <span
+                                            className={`badge ${user.status ? "bg-success" : "bg-secondary"}`}
+                                            onClick={() => toggleStatus(user.id)}
+                                        >
+                                            {user.status ? "Active" : "Inactive"}
+                                        </span>
+                                    </td>
+                                    <td>{formatDate(user.created_at)}</td>
+                                    <td>
+                                        <button
+                                            className="btn btn-danger"
+                                            onClick={() => deleteUser(user.id)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -110,8 +231,7 @@ const User = () => {
 
                         {[...Array(totalPages)].map((_, i) => (
                             <li
-                                className={`page-item ${currentPage === i + 1 ? "active" : ""
-                                    }`}
+                                className={`page-item ${currentPage === i + 1 ? "active" : ""}`}
                                 key={i + 1}
                             >
                                 <button
@@ -124,8 +244,7 @@ const User = () => {
                         ))}
 
                         <li
-                            className={`page-item ${currentPage === totalPages ? "disabled" : ""
-                                }`}
+                            className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}
                         >
                             <button
                                 className="page-link"

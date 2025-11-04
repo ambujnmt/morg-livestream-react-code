@@ -62,6 +62,8 @@ const Sidebar = ({ collapsed }) => {
         },
 
         { icon: <FaTasks />, label: 'Banner Management', path: '/banners' },
+        { icon: <FaTasks />, label: 'Plan Management', path: '/plans' },
+
         { icon: <FaTasks />, label: 'User Management', path: '/users-list' },
     ];
 

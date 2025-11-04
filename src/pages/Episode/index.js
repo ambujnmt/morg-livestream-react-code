@@ -242,7 +242,7 @@ const Episode = () => {
 
             <Form.Control
                 type="text"
-                placeholder="Search videos..."
+                placeholder="Search episode..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="mb-4"
