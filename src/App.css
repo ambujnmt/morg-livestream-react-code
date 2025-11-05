@@ -12,3 +12,7 @@
   background-color: #ccc;
   border-radius: 3px;
 }
+
+#root {
+  background-color: #5C2E00 !important;
+}
