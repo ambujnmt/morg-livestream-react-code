@@ -62,6 +62,8 @@ const Sidebar = ({ collapsed }) => {
         },
 
         { icon: <FaTasks />, label: 'Banner Management', path: '/banners' },
+        { icon: <FaTasks />, label: 'Subscription Management', path: '/subscription-list' },
+
         { icon: <FaTasks />, label: 'Plan Management', path: '/plans' },
 
         { icon: <FaTasks />, label: 'User Management', path: '/users-list' },
@@ -95,8 +97,10 @@ const Sidebar = ({ collapsed }) => {
                 zIndex: 1040,
                 boxShadow: '2px 0 5px rgba(0,0,0,0.05)',
                 transition: 'width 0.3s ease',
+                overflowY: 'auto', // <- Make sidebar scrollable
             }}
         >
+
             {/* Logo */}
             <div className="w-100 text-center py-3 border-bottom">
                 {!collapsed && (
@@ -109,7 +113,7 @@ const Sidebar = ({ collapsed }) => {
             {/* Navigation Items */}
             <ul className="nav flex-column w-100 px-3 mt-3">
                 {navItems.map((item, index) => (
-                    <li key={index} className="nav-item mb-2">
+                    <li key={index} className="nav-item mb-2" style={{ fontSize: '13px' }}>
                         {item.isDropdown ? (
                             <>
                                 <button
