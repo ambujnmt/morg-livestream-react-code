@@ -1,85 +1,90 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const Banner = () => {
     const [banners, setBanners] = useState([]);
     const [seriesList, setSeriesList] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const perPage = 5;
 
     const [showModal, setShowModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
-    const [formData, setFormData] = useState({ id: '', headline: '', series_id: '', image: null });
+    const [formData, setFormData] = useState({
+        id: "",
+        headline: "",
+        series_id: "",
+        image: null,
+    });
 
-    const API_BASE = 'https://site2demo.in/livestreaming/api';
+    const API_BASE = "https://site2demo.in/livestreaming/api";
 
-    // Fetch all banners
+    // ✅ Fetch banners
     const fetchBanners = async () => {
         setLoading(true);
         try {
             const res = await axios.get(`${API_BASE}/banners`, {
-                headers: { Accept: 'application/json' },
+                headers: { Accept: "application/json" },
             });
             if (res.data && res.data.data) setBanners(res.data.data);
         } catch (error) {
             console.error(error.response?.data || error.message);
-            toast.error('Failed to fetch banners');
+            toast.error("Failed to fetch banners");
         }
         setLoading(false);
     };
 
-    // Fetch all series for dropdown
+    // ✅ Fetch series for dropdown
     const fetchSeries = async () => {
         try {
             const res = await axios.get(`${API_BASE}/series-list`, {
-                headers: { Accept: 'application/json' },
+                headers: { Accept: "application/json" },
             });
             if (res.data && res.data.data) setSeriesList(res.data.data);
         } catch (error) {
             console.error(error.response?.data || error.message);
-            toast.error('Failed to fetch series');
+            toast.error("Failed to fetch series list");
         }
     };
 
-    // Run on mount
     useEffect(() => {
         fetchBanners();
         fetchSeries();
     }, []);
 
-    // Filter banners based on search
+    // ✅ Filter + Pagination
     const filteredBanners = banners.filter((b) =>
-        (b.headline || '').toLowerCase().includes(search.toLowerCase())
+        (b.headline || "").toLowerCase().includes(search.toLowerCase())
     );
 
-    // Pagination
     const indexOfLast = currentPage * perPage;
     const indexOfFirst = indexOfLast - perPage;
     const currentBanners = filteredBanners.slice(indexOfFirst, indexOfLast);
     const totalPages = Math.ceil(filteredBanners.length / perPage);
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-    // Open modal for create or edit
-    const openModal = (banner = { id: '', headline: '', series_id: '', image: null }) => {
+    // ✅ Open modal
+    const openModal = (banner = { id: "", headline: "", series_id: "", image: null }) => {
         setFormData({
-            id: banner.id || '',
-            headline: banner.headline || '',
-            series_id: banner.series?.id || banner.series_id || '',
+            id: banner.id || "",
+            headline: banner.headline || "",
+            series_id: banner.series?.id || banner.series_id || "",
             image: null,
         });
         setPreviewImage(banner.image || null);
         setShowModal(true);
     };
+
     const closeModal = () => {
         setShowModal(false);
         setPreviewImage(null);
     };
 
-    // Handle input change and preview
+    // ✅ Input change handler
     const handleChange = (e) => {
         const { name, value, files } = e.target;
         if (files && files[0]) {
@@ -91,43 +96,58 @@ const Banner = () => {
         }
     };
 
-    // Handle create or update using POST method
+    // ✅ Create or Update Banner
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const data = new FormData();
-            data.append('title', formData.headline);
-            data.append('series_id', Number(formData.series_id));
+            data.append("headline", formData.headline);
+            data.append("series_id", formData.series_id);
             if (formData.image instanceof File) {
-                data.append('image', formData.image);
-            }
-            if (formData.id) {
-                data.append('id', formData.id);
+                data.append("image", formData.image);
             }
 
-            await axios.post(`${API_BASE}/banners-update`, data);
-            toast.success('Banner saved successfully');
+            if (formData.id) {
+                // update banner
+                data.append("id", formData.id);
+                await axios.post(`${API_BASE}/banners-update`, data);
+                toast.success("Banner updated successfully!");
+            } else {
+                // create banner
+                await axios.post(`${API_BASE}/create-banners`, data);
+                toast.success("Banner created successfully!");
+            }
+
             fetchBanners();
             closeModal();
         } catch (error) {
             console.error(error.response?.data || error.message);
-            toast.error('Failed to save banner');
+            toast.error("Failed to save banner");
         }
     };
 
-    // Handle delete
+    // ✅ Delete banner with SweetAlert
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this banner?')) return;
-        try {
-            await axios.post(`${API_BASE}/banners-delete`, { id }, {
-                headers: { Accept: 'application/json' },
-            });
-            toast.success('Banner deleted successfully');
-            fetchBanners();
-        } catch (error) {
-            console.error(error.response?.data || error.message);
-            toast.error('Failed to delete banner');
-        }
+        Swal.fire({
+            title: "Are you sure?",
+            text: "This banner will be permanently deleted!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Yes, delete it!",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await axios.post(`${API_BASE}/banners-delete`, { id });
+                    Swal.fire("Deleted!", "Banner deleted successfully!", "success");
+                    fetchBanners();
+                } catch (error) {
+                    console.error(error.response?.data || error.message);
+                    Swal.fire("Error!", "Failed to delete banner", "error");
+                }
+            }
+        });
     };
 
     return (
@@ -136,7 +156,7 @@ const Banner = () => {
             <div className="d-flex justify-content-between mb-3">
                 <h3>Banners</h3>
                 <button className="btn btn-primary" onClick={() => openModal()}>
-                    Create Banner
+                    + Create Banner
                 </button>
             </div>
 
@@ -169,7 +189,7 @@ const Banner = () => {
                                 <tr key={banner.id}>
                                     <td>{idx + 1 + (currentPage - 1) * perPage}</td>
                                     <td>{banner.headline}</td>
-                                    <td>{banner.series?.title || '-'}</td>
+                                    <td>{banner.series?.title || "-"}</td>
                                     <td>
                                         {banner.image ? (
                                             <img
@@ -177,10 +197,10 @@ const Banner = () => {
                                                 alt={banner.headline}
                                                 width={100}
                                                 height={60}
-                                                style={{ objectFit: 'cover' }}
+                                                style={{ objectFit: "cover" }}
                                             />
                                         ) : (
-                                            'No image'
+                                            "No image"
                                         )}
                                     </td>
                                     <td>
@@ -217,7 +237,7 @@ const Banner = () => {
                         {[...Array(totalPages)].map((_, i) => (
                             <li
                                 key={i + 1}
-                                className={`page-item ${i + 1 === currentPage ? 'active' : ''}`}
+                                className={`page-item ${i + 1 === currentPage ? "active" : ""}`}
                             >
                                 <button className="page-link" onClick={() => paginate(i + 1)}>
                                     {i + 1}
@@ -228,21 +248,25 @@ const Banner = () => {
                 </nav>
             )}
 
-            {/* Modal for create/edit */}
+            {/* Modal */}
             {showModal && (
                 <div
                     className="modal show fade d-block"
                     tabIndex="-1"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+                    style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
                 >
                     <div className="modal-dialog">
                         <div className="modal-content">
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-header">
                                     <h5 className="modal-title">
-                                        {formData.id ? 'Update Banner' : 'Create Banner'}
+                                        {formData.id ? "Update Banner" : "Create Banner"}
                                     </h5>
-                                    <button type="button" className="btn-close" onClick={closeModal}></button>
+                                    <button
+                                        type="button"
+                                        className="btn-close"
+                                        onClick={closeModal}
+                                    ></button>
                                 </div>
 
                                 <div className="modal-body">
@@ -259,7 +283,7 @@ const Banner = () => {
                                         />
                                     </div>
 
-                                    {/* Series Dropdown */}
+                                    {/* Series */}
                                     <div className="mb-3">
                                         <label className="form-label">Select Series</label>
                                         <select
@@ -278,7 +302,7 @@ const Banner = () => {
                                         </select>
                                     </div>
 
-                                    {/* Image Upload + Preview */}
+                                    {/* Image */}
                                     <div className="mb-3">
                                         <label className="form-label">Image</label>
                                         <input
@@ -287,8 +311,6 @@ const Banner = () => {
                                             className="form-control mb-2"
                                             onChange={handleChange}
                                         />
-
-                                        {/* Show preview if available */}
                                         {previewImage && (
                                             <div className="text-center">
                                                 <img
@@ -297,14 +319,13 @@ const Banner = () => {
                                                     width="200"
                                                     height="120"
                                                     className="border rounded"
-                                                    style={{ objectFit: 'cover' }}
+                                                    style={{ objectFit: "cover" }}
                                                 />
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Modal footer with buttons */}
                                 <div className="modal-footer">
                                     <button
                                         type="button"
@@ -314,7 +335,7 @@ const Banner = () => {
                                         Cancel
                                     </button>
                                     <button type="submit" className="btn btn-primary">
-                                        {formData.id ? 'Update' : 'Create'}
+                                        {formData.id ? "Update" : "Create"}
                                     </button>
                                 </div>
                             </form>

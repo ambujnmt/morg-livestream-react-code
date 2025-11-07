@@ -19,7 +19,10 @@ const Sessions = () => {
         id: '',
         series_id: '',
         title: '',
-        description: ''
+        description: '',
+        free_episodes: '',
+        price_per_episode: '',
+        full_season_price: ''
     });
 
     const API_BASE = 'https://site2demo.in/livestreaming/api';
@@ -40,9 +43,7 @@ const Sessions = () => {
         setLoading(true);
         try {
             const res = await axios.get(`${API_BASE}/sessions-list`);
-            if (res.data && res.data.data) {
-                setSessions(res.data.data);
-            }
+            if (res.data && res.data.data) setSessions(res.data.data);
         } catch (error) {
             console.error(error);
             toast.error('Failed to fetch sessions');
@@ -54,12 +55,10 @@ const Sessions = () => {
     // Merge series title into sessions
     const mergeSeriesIntoSessions = () => {
         const seriesMap = {};
-        seriesList.forEach(series => {
-            seriesMap[series.id] = series;
-        });
+        seriesList.forEach(series => { seriesMap[series.id] = series; });
         const merged = sessions.map(session => ({
             ...session,
-            series: seriesMap[session.series_id] // attach series object
+            series: seriesMap[session.series_id]
         }));
         setSessionsWithSeries(merged);
     };
@@ -69,37 +68,47 @@ const Sessions = () => {
         fetchSessions();
     }, []);
 
-    // Re-merge whenever sessions or seriesList change
     useEffect(() => {
-        if (seriesList.length && sessions.length) {
-            mergeSeriesIntoSessions();
-        }
+        if (seriesList.length && sessions.length) mergeSeriesIntoSessions();
     }, [sessions, seriesList]);
 
-    // Open modal for create/edit
-    const openModal = (session = { id: '', series_id: '', title: '', description: '' }) => {
-        setFormData({
-            id: session.id || '',
-            series_id: session.series_id || '',
-            title: session.title || '',
-            description: session.description || ''
-        });
+    const openModal = (session = null) => {
+        if (session) {
+            setFormData({
+                id: session.id || '',
+                series_id: session.series_id || '',
+                title: session.title || '',
+                description: session.description || '',
+                free_episodes: session.free_episodes || '',
+                price_per_episode: session.price_per_episode || '',
+                full_season_price: session.full_season_price || ''
+            });
+        } else {
+            setFormData({
+                id: '',
+                series_id: '',
+                title: '',
+                description: '',
+                free_episodes: '',
+                price_per_episode: '',
+                full_season_price: ''
+            });
+        }
         setShowModal(true);
     };
 
     const closeModal = () => setShowModal(false);
 
-    // Handle form input change
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Save create/update
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (!formData.series_id || !formData.title || !formData.description) {
+        // Validate
+        if (!formData.series_id || !formData.title || !formData.description
+            || formData.free_episodes === '' || formData.price_per_episode === '' || formData.full_season_price === '') {
             toast.error('All fields are required');
             return;
         }
@@ -109,11 +118,14 @@ const Sessions = () => {
             data.append('series_id', formData.series_id);
             data.append('title', formData.title);
             data.append('description', formData.description);
+            data.append('free_episodes', formData.free_episodes);
+            data.append('price_per_episode', formData.price_per_episode);
+            data.append('full_season_price', formData.full_season_price);
             if (formData.id) data.append('id', formData.id);
 
             const url = formData.id
                 ? `${API_BASE}/session-update`
-                : `${API_BASE}/session-create`;
+                : `${API_BASE}/create-sessions`;
 
             const res = await axios.post(url, data, {
                 headers: { Accept: 'application/json' }
@@ -121,8 +133,8 @@ const Sessions = () => {
 
             if (res.data.status) {
                 toast.success(`Session ${formData.id ? 'updated' : 'created'} successfully!`);
-                fetchSessions(); // refetch sessions
-                setTimeout(() => fetchSeries(), 500); // optional: refresh series as well
+                fetchSessions();
+                setTimeout(() => fetchSeries(), 500);
                 closeModal();
             } else {
                 toast.error(res.data.message || 'Failed to save session');
@@ -133,7 +145,6 @@ const Sessions = () => {
         }
     };
 
-    // Delete session
     const handleDelete = async (id) => {
         const result = await Swal.fire({
             title: 'Are you sure?',
@@ -170,19 +181,16 @@ const Sessions = () => {
     const currentSessions = filteredSessions.slice(indexOfFirst, indexOfLast);
 
     const handlePageChange = (page) => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
+        if (page >= 1 && page <= totalPages) setCurrentPage(page);
     };
 
     return (
         <div className="container mt-4">
             <div className="d-flex justify-content-between mb-3 align-items-center">
-                <h3>Season</h3>
+                <h3>Seasons / Sessions</h3>
                 <button className="btn btn-primary" onClick={() => openModal()}>Create Season</button>
             </div>
 
-            {/* Search */}
             <input
                 type="text"
                 className="form-control mb-3"
@@ -194,7 +202,6 @@ const Sessions = () => {
                 }}
             />
 
-            {/* Table */}
             {loading ? (
                 <p>Loading...</p>
             ) : (
@@ -205,6 +212,9 @@ const Sessions = () => {
                             <th>Title</th>
                             <th>Series</th>
                             <th>Description</th>
+                            <th>Free Episodes</th>
+                            <th>Price per Episode</th>
+                            <th>Full Season Price</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -214,9 +224,11 @@ const Sessions = () => {
                                 <tr key={s.id}>
                                     <td>{idx + 1 + (currentPage - 1) * perPage}</td>
                                     <td>{s.title}</td>
-                                    {/* Display series title */}
                                     <td>{s.series?.title || '-'}</td>
                                     <td>{s.description}</td>
+                                    <td>{s.free_episodes}</td>
+                                    <td>{s.price_per_episode}</td>
+                                    <td>{s.full_season_price}</td>
                                     <td>
                                         <button className="btn btn-warning btn-sm me-2" onClick={() => openModal(s)}>Edit</button>
                                         <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s.id)}>Delete</button>
@@ -225,14 +237,13 @@ const Sessions = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="5" className="text-center text-muted">No sessions found</td>
+                                <td colSpan="8" className="text-center text-muted">No sessions found</td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             )}
 
-            {/* Pagination */}
             {totalPages > 1 && (
                 <nav>
                     <ul className="pagination justify-content-center">
@@ -251,7 +262,6 @@ const Sessions = () => {
                 </nav>
             )}
 
-            {/* Modal for create/edit */}
             {showModal && (
                 <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
                     <div className="modal-dialog">
@@ -262,7 +272,6 @@ const Sessions = () => {
                                     <button type="button" className="btn-close" onClick={closeModal}></button>
                                 </div>
                                 <div className="modal-body">
-                                    {/* Series dropdown */}
                                     <div className="mb-3">
                                         <label className="form-label">Series</label>
                                         <select
@@ -273,12 +282,11 @@ const Sessions = () => {
                                             required
                                         >
                                             <option value="">Select Series</option>
-                                            {seriesList.map((series) => (
+                                            {seriesList.map(series => (
                                                 <option key={series.id} value={series.id}>{series.title}</option>
                                             ))}
                                         </select>
                                     </div>
-                                    {/* Title input */}
                                     <div className="mb-3">
                                         <label className="form-label">Title</label>
                                         <input
@@ -290,7 +298,6 @@ const Sessions = () => {
                                             required
                                         />
                                     </div>
-                                    {/* Description textarea */}
                                     <div className="mb-3">
                                         <label className="form-label">Description</label>
                                         <textarea
@@ -300,7 +307,43 @@ const Sessions = () => {
                                             value={formData.description}
                                             onChange={handleChange}
                                             required
-                                        ></textarea>
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Free Episodes</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            name="free_episodes"
+                                            value={formData.free_episodes}
+                                            onChange={handleChange}
+                                            min="0"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Price per Episode</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            name="price_per_episode"
+                                            value={formData.price_per_episode}
+                                            onChange={handleChange}
+                                            min="0"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Full Season Price</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            name="full_season_price"
+                                            value={formData.full_season_price}
+                                            onChange={handleChange}
+                                            min="0"
+                                            required
+                                        />
                                     </div>
                                 </div>
                                 <div className="modal-footer">

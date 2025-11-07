@@ -14,6 +14,7 @@ import Sessions from './pages/Sessions';
 import Episode from './pages/Episode';
 import Plan from './pages/Plan';
 import User from './pages/Users';
+import Subscription from './pages/Subscription';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -22,10 +23,10 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Route */}
+        {/* ✅ Public Route */}
         <Route path="/" element={<Login />} />
 
-        {/* Protected Routes */}
+        {/* ✅ Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -36,6 +37,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/category"
           element={
@@ -46,6 +48,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/banners"
           element={
@@ -56,6 +59,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/series"
           element={
@@ -66,6 +70,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/season"
           element={
@@ -76,6 +81,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/episodes"
           element={
@@ -86,6 +92,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/users-list"
           element={
@@ -96,6 +103,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/plans"
           element={
@@ -106,8 +114,20 @@ function App() {
             </PrivateRoute>
           }
         />
+
+        <Route
+          path="/subscription-list"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Subscription />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
       </Routes>
 
+      {/* Toast Notifications */}
       <ToastContainer />
     </Router>
   );

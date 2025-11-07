@@ -11,6 +11,7 @@ const Episode = () => {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [videoFile, setVideoFile] = useState(null);
+    const [videoURL, setVideoURL] = useState("");
     const [videoPreview, setVideoPreview] = useState(null);
     const [seriesId, setSeriesId] = useState("");
     const [sessionId, setSessionId] = useState("");
@@ -25,6 +26,7 @@ const Episode = () => {
     const [editVideoId, setEditVideoId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [toastId, setToastId] = useState(null);
+    const [useFileUpload, setUseFileUpload] = useState(false); // Toggle between URL & File
 
     useEffect(() => {
         fetchDropdownData();
@@ -57,6 +59,7 @@ const Episode = () => {
     };
 
     const formatReleaseDate = (releaseDate) => {
+        if (!releaseDate) return "-";
         const date = new Date(releaseDate);
         return date.toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -83,21 +86,12 @@ const Episode = () => {
             video.title.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
-    // ✅ Custom toast function to prevent duplicates
     const showToast = (message, type = "success") => {
         if (!toast.isActive(toastId)) {
             const id =
                 type === "success"
-                    ? toast.success(message, {
-                        autoClose: 2500,
-                        toastId: "unique",
-                        theme: "colored",
-                    })
-                    : toast.error(message, {
-                        autoClose: 2500,
-                        toastId: "unique",
-                        theme: "colored",
-                    });
+                    ? toast.success(message, { autoClose: 2500, toastId: "unique", theme: "colored" })
+                    : toast.error(message, { autoClose: 2500, toastId: "unique", theme: "colored" });
             setToastId(id);
         }
     };
@@ -106,29 +100,60 @@ const Episode = () => {
         e.preventDefault();
         setLoading(true);
 
-        const formData = new FormData();
-        formData.append("title", title);
-        formData.append("description", description);
-        formData.append("series_id", seriesId);
-        formData.append("session_id", sessionId);
-        formData.append("category_id", categoryId);
-        if (videoFile) formData.append("video_file", videoFile);
-
         try {
-            if (isEditing) {
-                formData.append("video_id", editVideoId);
-                await axios.post(`${baseURL}/videos-update`, formData);
-                showToast("Video updated successfully", "success");
+            if (useFileUpload) {
+                if (!videoFile && !isEditing) {
+                    showToast("Please select a video file", "error");
+                    setLoading(false);
+                    return;
+                }
+
+                if (videoFile && videoFile.size > 50 * 1024 * 1024) {
+                    showToast("Video file should be less than 50MB", "error");
+                    setLoading(false);
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("title", title);
+                formData.append("description", description);
+                formData.append("series_id", seriesId);
+                formData.append("session_id", sessionId);
+                formData.append("category_id", categoryId);
+                if (videoFile) formData.append("video_file", videoFile);
+                if (isEditing) formData.append("video_id", editVideoId);
+
+                await axios.post(`${baseURL}/${isEditing ? "videos-update" : "videos-upload"}`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" }
+                });
             } else {
-                await axios.post(`${baseURL}/videos-upload`, formData);
-                showToast("Video uploaded successfully", "success");
+                if (!videoURL && !isEditing) {
+                    showToast("Please enter a video URL", "error");
+                    setLoading(false);
+                    return;
+                }
+
+                const payload = {
+                    title,
+                    description,
+                    series_id: seriesId,
+                    session_id: sessionId,
+                    category_id: categoryId,
+                    video_url: videoURL,
+                };
+                if (isEditing) payload.video_id = editVideoId;
+
+                await axios.post(`${baseURL}/${isEditing ? "videos-update" : "videos-upload"}`, payload, {
+                    headers: { "Content-Type": "application/json" }
+                });
             }
 
+            showToast(isEditing ? "Video updated successfully" : "Video uploaded successfully", "success");
             setShowModal(false);
             resetForm();
             fetchVideos();
         } catch (error) {
-            console.error("Error uploading video:", error);
+            console.error("Error uploading video:", error.response || error);
             showToast("Error uploading video", "error");
         } finally {
             setLoading(false);
@@ -139,22 +164,20 @@ const Episode = () => {
         setTitle("");
         setDescription("");
         setVideoFile(null);
+        setVideoURL("");
         setVideoPreview(null);
         setSeriesId("");
         setSessionId("");
         setCategoryId("");
         setIsEditing(false);
         setEditVideoId(null);
+        setUseFileUpload(false);
     };
 
     const handleSeriesChange = (e) => {
         const selectedId = e.target.value;
         setSeriesId(selectedId);
-
-        const selectedSeries = seriesList.find(
-            (s) => String(s.id) === String(selectedId)
-        );
-
+        const selectedSeries = seriesList.find((s) => String(s.id) === String(selectedId));
         if (selectedSeries && selectedSeries.category) {
             setCategoryId(String(selectedSeries.category.id));
         } else {
@@ -169,9 +192,7 @@ const Episode = () => {
         if (!detectedSeriesId || !detectedSessionId) {
             episodesList.forEach((series) => {
                 series.sessions.forEach((session) => {
-                    const found = session.videos.find(
-                        (v) => v.video_id === video.video_id
-                    );
+                    const found = session.videos.find((v) => v.video_id === video.video_id);
                     if (found) {
                         detectedSeriesId = series.series_id;
                         detectedSessionId = session.session_id;
@@ -187,7 +208,10 @@ const Episode = () => {
         setCategoryId(String(video.category_id || ""));
         setIsEditing(true);
         setEditVideoId(video.video_id);
-        setVideoPreview(video.video_url ? video.video_url : null);
+        setUseFileUpload(!!video.video_file); // Toggle if file or URL
+        setVideoFile(null);
+        setVideoURL(video.video_url || "");
+        setVideoPreview(video.video_url || (video.video_file ? video.video_file_url : null));
         setShowModal(true);
     };
 
@@ -225,6 +249,12 @@ const Episode = () => {
         }
     };
 
+    const handleURLChange = (e) => {
+        const url = e.target.value;
+        setVideoURL(url);
+        setVideoPreview(url);
+    };
+
     return (
         <div className="container my-5">
             <div className="d-flex justify-content-between mb-3">
@@ -252,7 +282,6 @@ const Episode = () => {
                 <thead>
                     <tr>
                         <th>#</th>
-
                         <th>Series</th>
                         <th>Season</th>
                         <th>Title</th>
@@ -273,6 +302,10 @@ const Episode = () => {
                                 <td>
                                     {video.video_url ? (
                                         <a href={video.video_url} target="_blank" rel="noreferrer">
+                                            View
+                                        </a>
+                                    ) : video.video_file ? (
+                                        <a href={video.video_file_url} target="_blank" rel="noreferrer">
                                             View
                                         </a>
                                     ) : (
@@ -317,14 +350,8 @@ const Episode = () => {
                 <div className="modal-dialog">
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h5 className="modal-title">
-                                {isEditing ? "Edit Video" : "Upload Video"}
-                            </h5>
-                            <button
-                                type="button"
-                                className="btn-close"
-                                onClick={() => setShowModal(false)}
-                            ></button>
+                            <h5 className="modal-title">{isEditing ? "Edit Video" : "Upload Video"}</h5>
+                            <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
                         </div>
                         <div className="modal-body">
                             <form onSubmit={handleFormSubmit}>
@@ -351,9 +378,7 @@ const Episode = () => {
                                     <label className="form-label">Category</label>
                                     {categoryId ? (
                                         <div className="form-control bg-light">
-                                            {categoriesList.find(
-                                                (cat) => String(cat.id) === String(categoryId)
-                                            )?.name || "N/A"}
+                                            {categoriesList.find((cat) => String(cat.id) === String(categoryId))?.name || "N/A"}
                                         </div>
                                     ) : (
                                         <div className="form-control bg-light text-muted">
@@ -401,15 +426,42 @@ const Episode = () => {
                                     ></textarea>
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Video File</label>
+                                {/* Toggle between File Upload and URL */}
+                                <div className="mb-3 form-check form-switch">
                                     <input
-                                        type="file"
-                                        className="form-control"
-                                        onChange={handleFileChange}
-                                        required={!isEditing}
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        checked={useFileUpload}
+                                        onChange={() => setUseFileUpload(!useFileUpload)}
+                                        id="toggleUpload"
                                     />
+                                    <label className="form-check-label" htmlFor="toggleUpload">
+                                        {useFileUpload ? "Use File Upload" : "Use Video URL"}
+                                    </label>
                                 </div>
+
+                                {useFileUpload ? (
+                                    <div className="mb-3">
+                                        <label className="form-label">Video File (Max 50MB)</label>
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            onChange={handleFileChange}
+                                            required={!isEditing}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="mb-3">
+                                        <label className="form-label">Video URL</label>
+                                        <input
+                                            type="url"
+                                            className="form-control"
+                                            value={videoURL}
+                                            onChange={handleURLChange}
+                                            required={!isEditing}
+                                        />
+                                    </div>
+                                )}
 
                                 {videoPreview && (
                                     <div className="mb-3">
@@ -425,11 +477,7 @@ const Episode = () => {
                                 <Button type="submit" variant="primary" disabled={loading}>
                                     {loading ? (
                                         <>
-                                            <Spinner
-                                                animation="border"
-                                                size="sm"
-                                                className="me-2"
-                                            />
+                                            <Spinner animation="border" size="sm" className="me-2" />
                                             Please wait...
                                         </>
                                     ) : isEditing ? (
@@ -446,7 +494,6 @@ const Episode = () => {
 
             {showModal && <div className="modal-backdrop fade show"></div>}
 
-            {/* ✅ ToastContainer only once and safe config */}
             <ToastContainer
                 position="top-right"
                 autoClose={2500}

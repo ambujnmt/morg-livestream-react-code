@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2"; // ✅ SweetAlert2 import
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const BASE_URL = "https://site2demo.in/livestreaming/api";
@@ -11,7 +12,7 @@ const Categories = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(false);
 
-    // Modal control
+    // Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
 
@@ -65,7 +66,7 @@ const Categories = () => {
         }
     };
 
-    // ✅ Edit (open modal)
+    // ✅ Edit category (open modal)
     const handleEditClick = (cat) => {
         setEditData({
             id: cat.id,
@@ -99,26 +100,37 @@ const Categories = () => {
         }
     };
 
-    // ✅ Delete category
+    // ✅ Delete category (with SweetAlert2)
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure you want to delete this category?")) {
-            try {
-                const res = await axios.post(
-                    `${BASE_URL}/categories-delete`,
-                    { id },
-                    { headers: { Accept: "application/json" } }
-                );
-                if (res.data.status) {
-                    toast.success("Category deleted successfully!");
-                    fetchCategories();
-                } else {
-                    toast.error(res.data.message || "Failed to delete");
+        Swal.fire({
+            title: "Are you sure?",
+            text: "This category will be permanently deleted!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Yes, delete it!",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await axios.post(
+                        `${BASE_URL}/categories-delete`,
+                        { id },
+                        { headers: { Accept: "application/json" } }
+                    );
+
+                    if (res.data.status) {
+                        Swal.fire("Deleted!", "Category has been deleted.", "success");
+                        fetchCategories();
+                    } else {
+                        Swal.fire("Error!", res.data.message || "Failed to delete.", "error");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire("Error!", "Something went wrong while deleting.", "error");
                 }
-            } catch (err) {
-                console.error(err);
-                toast.error("Error deleting category");
             }
-        }
+        });
     };
 
     // ✅ Search + Pagination
