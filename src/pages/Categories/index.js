@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2"; // ✅ SweetAlert2 import
+import Swal from "sweetalert2";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const BASE_URL = "https://site2demo.in/livestreaming/api";
@@ -17,12 +17,12 @@ const Categories = () => {
     const [showEditModal, setShowEditModal] = useState(false);
 
     // Form data
-    const [formData, setFormData] = useState({ name: "", description: "" });
-    const [editData, setEditData] = useState({ id: "", name: "", description: "" });
+    const [formData, setFormData] = useState({ name: "", description: "", image: null });
+    const [editData, setEditData] = useState({ id: "", name: "", description: "", image: null });
 
     const ITEMS_PER_PAGE = 5;
 
-    // ✅ Fetch all categories
+    // Fetch categories
     const fetchCategories = async () => {
         try {
             const res = await axios.get(`${BASE_URL}/categories-list`);
@@ -41,18 +41,29 @@ const Categories = () => {
         fetchCategories();
     }, []);
 
-    // ✅ Create category
+    // CREATE CATEGORY
     const handleCreate = async (e) => {
         e.preventDefault();
         setLoading(true);
+
         try {
-            const res = await axios.post(`${BASE_URL}/create-categories`, formData, {
-                headers: { Accept: "application/json" },
+            const data = new FormData();
+            data.append("name", formData.name);
+            data.append("description", formData.description);
+            if (formData.image) {
+                data.append("image", formData.image);
+            }
+
+            const res = await axios.post(`${BASE_URL}/create-categories`, data, {
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "multipart/form-data",
+                },
             });
 
             if (res.data.status) {
                 toast.success("Category created successfully!");
-                setFormData({ name: "", description: "" });
+                setFormData({ name: "", description: "", image: null });
                 setShowCreateModal(false);
                 fetchCategories();
             } else {
@@ -66,23 +77,36 @@ const Categories = () => {
         }
     };
 
-    // ✅ Edit category (open modal)
+    // EDIT CATEGORY MODAL
     const handleEditClick = (cat) => {
         setEditData({
             id: cat.id,
             name: cat.name,
             description: cat.description,
+            image: null, 
         });
         setShowEditModal(true);
     };
 
-    // ✅ Update category
+    // UPDATE CATEGORY
     const handleUpdate = async (e) => {
         e.preventDefault();
         setLoading(true);
+
         try {
-            const res = await axios.post(`${BASE_URL}/categories-update`, editData, {
-                headers: { Accept: "application/json" },
+            const data = new FormData();
+            data.append("id", editData.id);
+            data.append("name", editData.name);
+            data.append("description", editData.description);
+            if (editData.image) {
+                data.append("image", editData.image);
+            }
+
+            const res = await axios.post(`${BASE_URL}/categories-update`, data, {
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "multipart/form-data",
+                },
             });
 
             if (res.data.status) {
@@ -100,7 +124,7 @@ const Categories = () => {
         }
     };
 
-    // ✅ Delete category (with SweetAlert2)
+    // DELETE CATEGORY
     const handleDelete = async (id) => {
         Swal.fire({
             title: "Are you sure?",
@@ -133,7 +157,7 @@ const Categories = () => {
         });
     };
 
-    // ✅ Search + Pagination
+    // Search + Pagination
     const filtered = categories.filter((cat) =>
         cat.name.toLowerCase().includes(search.toLowerCase())
     );
@@ -171,7 +195,8 @@ const Categories = () => {
                             <th>Name</th>
                             <th>Slug</th>
                             <th>Description</th>
-                            <th>Created</th>
+                            <th>Image</th>
+                            <th>Date</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -183,7 +208,24 @@ const Categories = () => {
                                     <td>{cat.name}</td>
                                     <td>{cat.slug}</td>
                                     <td>{cat.description}</td>
-                                    <td>{new Date(cat.created_at).toLocaleDateString()}</td>
+                                    <td>
+                                        {cat.image && (
+                                            <img
+                                                src={cat.image}
+                                                alt={cat.name}
+                                                width="50"
+                                                height="50"
+                                            />
+                                        )}
+                                    </td>
+                                    {/* <td>{new Date(cat.created_at).toLocaleDateString()}</td> */}
+                                    <td>
+                                            {new Date(cat.created_at).toLocaleDateString("en-GB", {
+                                                day: "2-digit",
+                                                month: "short",
+                                                year: "numeric",
+                                            })}
+                                        </td>
                                     <td>
                                         <button
                                             className="btn btn-sm btn-warning me-2"
@@ -202,7 +244,7 @@ const Categories = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="6" className="text-center">
+                                <td colSpan="7" className="text-center">
                                     No categories found
                                 </td>
                             </tr>
@@ -240,22 +282,14 @@ const Categories = () => {
                 </nav>
             )}
 
-            {/* Create Modal */}
+            {/* CREATE MODAL */}
             {showCreateModal && (
-                <div
-                    className="modal show fade d-block"
-                    tabIndex="-1"
-                    style={{ background: "rgba(0,0,0,0.5)" }}
-                >
+                <div className="modal show fade d-block" tabIndex="-1" style={{ background: "rgba(0,0,0,0.5)" }}>
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header bg-primary text-white">
                                 <h5 className="modal-title">Add Category</h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => setShowCreateModal(false)}
-                                ></button>
+                                <button type="button" className="btn-close" onClick={() => setShowCreateModal(false)}></button>
                             </div>
                             <div className="modal-body">
                                 <form onSubmit={handleCreate}>
@@ -285,19 +319,20 @@ const Categories = () => {
                                             required
                                         ></textarea>
                                     </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Image</label>
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, image: e.target.files[0] })
+                                            }
+                                            accept="image/*"
+                                        />
+                                    </div>
                                     <div className="text-end">
-                                        <button
-                                            type="button"
-                                            className="btn btn-secondary me-2"
-                                            onClick={() => setShowCreateModal(false)}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="btn btn-primary"
-                                            disabled={loading}
-                                        >
+                                        <button type="button" className="btn btn-secondary me-2" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                                        <button type="submit" className="btn btn-primary" disabled={loading}>
                                             {loading ? "Saving..." : "Save"}
                                         </button>
                                     </div>
@@ -308,22 +343,14 @@ const Categories = () => {
                 </div>
             )}
 
-            {/* Edit Modal */}
+            {/* EDIT MODAL */}
             {showEditModal && (
-                <div
-                    className="modal show fade d-block"
-                    tabIndex="-1"
-                    style={{ background: "rgba(0,0,0,0.5)" }}
-                >
+                <div className="modal show fade d-block" tabIndex="-1" style={{ background: "rgba(0,0,0,0.5)" }}>
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header bg-warning text-white">
                                 <h5 className="modal-title">Edit Category</h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => setShowEditModal(false)}
-                                ></button>
+                                <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
                             </div>
                             <div className="modal-body">
                                 <form onSubmit={handleUpdate}>
@@ -353,19 +380,20 @@ const Categories = () => {
                                             required
                                         ></textarea>
                                     </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Image (optional)</label>
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            onChange={(e) =>
+                                                setEditData({ ...editData, image: e.target.files[0] })
+                                            }
+                                            accept="image/*"
+                                        />
+                                    </div>
                                     <div className="text-end">
-                                        <button
-                                            type="button"
-                                            className="btn btn-secondary me-2"
-                                            onClick={() => setShowEditModal(false)}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="btn btn-warning text-white"
-                                            disabled={loading}
-                                        >
+                                        <button type="button" className="btn btn-secondary me-2" onClick={() => setShowEditModal(false)}>Cancel</button>
+                                        <button type="submit" className="btn btn-warning text-white" disabled={loading}>
                                             {loading ? "Updating..." : "Update"}
                                         </button>
                                     </div>
