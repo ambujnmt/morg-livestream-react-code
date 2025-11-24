@@ -13,13 +13,12 @@ const Subscription = () => {
     const API_URL = 'https://site2demo.in/livestreaming/api/subscription-list';
     const DELETE_URL = 'https://site2demo.in/livestreaming/api/subscription-delete';
 
-    // Format date as "06 Nov 2025"
     const formatDate = (dateStr) => {
         const options = { day: '2-digit', month: 'short', year: 'numeric' };
         return new Date(dateStr).toLocaleDateString('en-GB', options);
     };
 
-    // Fetch all subscriptions
+
     const fetchSubscriptions = async () => {
         setLoading(true);
         try {

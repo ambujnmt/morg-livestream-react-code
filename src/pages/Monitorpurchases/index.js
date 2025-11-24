@@ -22,7 +22,7 @@ const Monitorpurchases = () => {
 
   const fetchPurchases = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/api/purchases-list");
+      const res = await axios.get("https://site2demo.in/livestreaming/api/purchases-list");
       if (res.data && res.data.data) {
         setPurchases(res.data.data);
       } else {
@@ -88,7 +88,7 @@ const Monitorpurchases = () => {
 
         // Include token in headers
         const res = await axios.post(
-          "http://127.0.0.1:8000/api/purchases-delete",
+          "https://site2demo.in/livestreaming/api/purchases-delete",
           formData,
           {
             headers: {

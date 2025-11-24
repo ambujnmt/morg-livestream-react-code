@@ -5,27 +5,24 @@ import Swal from 'sweetalert2';
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const Series = () => {
-
     const API_BASE = "https://site2demo.in/livestreaming/api";
+    const SITE_URL = "https://site2demo.in/livestreaming/";
 
     const [seriesList, setSeriesList] = useState([]);
     const [categories, setCategories] = useState([]);
-
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
-
     const [showModal, setShowModal] = useState(false);
-
     const [formData, setFormData] = useState({
         id: "",
         title: "",
         category_id: "",
         description: "",
-        image: null,      
-        old_image: "" 
+        image: null,
+        old_image: ""
     });
 
-    // Fetch Series
+    // Fetch series
     const fetchSeries = async () => {
         setLoading(true);
         try {
@@ -37,7 +34,7 @@ const Series = () => {
         setLoading(false);
     };
 
-    // Fetch Categories
+    // Fetch categories
     const fetchCategories = async () => {
         try {
             const res = await axios.get(`${API_BASE}/categories-list`);
@@ -52,7 +49,7 @@ const Series = () => {
         fetchCategories();
     }, []);
 
-    // Open Modal (Create + Edit)
+    // Open modal for create/edit
     const openModal = (data = null) => {
         if (data) {
             setFormData({
@@ -78,21 +75,19 @@ const Series = () => {
 
     const closeModal = () => setShowModal(false);
 
-    // Handle Input
+    // Handle input
     const handleChange = (e) => {
         const { name, value, files } = e.target;
-
-        if (name === "image") {
+        if (name === "image" && files[0]) {
             setFormData((p) => ({ ...p, image: files[0] }));
         } else {
             setFormData((p) => ({ ...p, [name]: value }));
         }
     };
 
-    // Create / Update Submit
+    // Create / Update submit
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!formData.title || !formData.category_id || !formData.description) {
             toast.error("All fields required");
             return;
@@ -102,7 +97,6 @@ const Series = () => {
         data.append("title", formData.title);
         data.append("category_id", formData.category_id);
         data.append("description", formData.description);
-
         if (formData.image) data.append("image", formData.image);
         if (formData.id) data.append("id", formData.id);
 
@@ -114,7 +108,6 @@ const Series = () => {
             const res = await axios.post(url, data, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-
             if (res.data.status) {
                 toast.success(`Series ${formData.id ? "updated" : "created"} successfully!`);
                 fetchSeries();
@@ -127,7 +120,7 @@ const Series = () => {
         }
     };
 
-    // Delete
+    // Delete series
     const handleDelete = async (id) => {
         const confirm = await Swal.fire({
             title: "Confirm?",
@@ -139,7 +132,6 @@ const Series = () => {
         if (confirm.isConfirmed) {
             try {
                 const res = await axios.post(`${API_BASE}/series-delete`, { id });
-
                 if (res.data.status) {
                     toast.success("Series Deleted");
                     fetchSeries();
@@ -152,7 +144,6 @@ const Series = () => {
         }
     };
 
-    // Filtered list
     const filteredSeries = seriesList.filter((s) =>
         s.title?.toLowerCase().includes(search.toLowerCase())
     );
@@ -193,23 +184,20 @@ const Series = () => {
                         filteredSeries.map((s, i) => (
                             <tr key={s.id}>
                                 <td>{i + 1}</td>
-
                                 <td>
                                     {s.image ? (
                                         <img
-                                            src={`https://site2demo.in/livestreaming/public/${s.image}`}
+                                            src={`${SITE_URL}${s.image}`}
                                             style={{ width: 60, height: 60, borderRadius: 6, objectFit: "cover" }}
-                                            alt="img"
+                                            alt={s.title}
                                         />
                                     ) : (
                                         "No Image"
                                     )}
                                 </td>
-
                                 <td>{s.title}</td>
                                 <td>{s.category?.name}</td>
                                 <td>{s.description}</td>
-
                                 <td>
                                     <button
                                         className="btn btn-warning btn-sm me-2"
@@ -217,7 +205,6 @@ const Series = () => {
                                     >
                                         Edit
                                     </button>
-
                                     <button
                                         className="btn btn-danger btn-sm"
                                         onClick={() => handleDelete(s.id)}
@@ -240,13 +227,12 @@ const Series = () => {
                 <div className="modal show fade d-block" style={{ background: "rgba(0,0,0,0.4)" }}>
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
-
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-header">
                                     <h5 className="modal-title">
                                         {formData.id ? "Update Series" : "Create Series"}
                                     </h5>
-                                    <button className="btn-close" onClick={closeModal}></button>
+                                    <button type="button" className="btn-close" onClick={closeModal}></button>
                                 </div>
 
                                 <div className="modal-body">
@@ -290,7 +276,7 @@ const Series = () => {
                                             value={formData.description}
                                             onChange={handleChange}
                                             required
-                                        ></textarea>
+                                        />
                                     </div>
 
                                     <div className="mb-3">
@@ -304,14 +290,26 @@ const Series = () => {
                                         />
                                     </div>
 
-                                    {/* OLD IMAGE PREVIEW */}
-                                    {formData.old_image && (
+                                    {/* OLD IMAGE */}
+                                    {formData.old_image && !formData.image && (
                                         <div className="mb-3 text-center">
                                             <p className="text-muted">Current Image:</p>
                                             <img
-                                                src={`https://site2demo.in/livestreaming/public/${formData.old_image}`}
-                                                style={{ width: 100, borderRadius: 8 }}
+                                                src={`${SITE_URL}${formData.old_image}`}
+                                                style={{ width: 100, height: 100, borderRadius: 8, objectFit: "cover" }}
                                                 alt="old"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* NEW IMAGE PREVIEW */}
+                                    {formData.image && (
+                                        <div className="mb-3 text-center">
+                                            <p className="text-muted">New Image Preview:</p>
+                                            <img
+                                                src={URL.createObjectURL(formData.image)}
+                                                style={{ width: 100, height: 100, borderRadius: 8, objectFit: "cover" }}
+                                                alt="preview"
                                             />
                                         </div>
                                     )}
@@ -319,14 +317,12 @@ const Series = () => {
                                 </div>
 
                                 <div className="modal-footer">
-                                    <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                                    <button className="btn btn-primary">
+                                    <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
+                                    <button type="submit" className="btn btn-primary">
                                         {formData.id ? "Update" : "Create"}
                                     </button>
                                 </div>
-
                             </form>
-
                         </div>
                     </div>
                 </div>
