@@ -4,23 +4,23 @@ import { toast, ToastContainer } from 'react-toastify';
 import Swal from 'sweetalert2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
-
+ 
 const Sessions = () => {
-
+ 
     const API_BASE = 'https://site2demo.in/livestreaming/api';
     const IMG_BASE = 'https://site2demo.in/livestreaming/';
-
+ 
     const [sessions, setSessions] = useState([]);
     const [seriesList, setSeriesList] = useState([]);
     const [sessionsWithSeries, setSessionsWithSeries] = useState([]);
-
+ 
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showModal, setShowModal] = useState(false);
-
+ 
     const perPage = 5;
-
+ 
     const initialForm = {
         id: '',
         series_id: '',
@@ -32,9 +32,9 @@ const Sessions = () => {
         image: null,
         old_image: ''
     };
-
+ 
     const [formData, setFormData] = useState(initialForm);
-
+ 
     // FETCH SERIES
     const fetchSeries = async () => {
         try {
@@ -44,7 +44,7 @@ const Sessions = () => {
             toast.error("Failed to load series");
         }
     };
-
+ 
     // FETCH SESSIONS
     const fetchSessions = async () => {
         setLoading(true);
@@ -56,7 +56,7 @@ const Sessions = () => {
         }
         setLoading(false);
     };
-
+ 
     const mergeData = () => {
         const map = {};
         seriesList.forEach(s => map[s.id] = s);
@@ -64,16 +64,16 @@ const Sessions = () => {
             sessions.map(sess => ({ ...sess, series: map[sess.series_id] }))
         );
     };
-
+ 
     useEffect(() => {
         fetchSeries();
         fetchSessions();
     }, []);
-
+ 
     useEffect(() => {
         if (seriesList.length && sessions.length) mergeData();
     }, [seriesList, sessions]);
-
+ 
     // OPEN MODAL
     const openModal = (session = null) => {
         if (session) {
@@ -93,29 +93,29 @@ const Sessions = () => {
         }
         setShowModal(true);
     };
-
+ 
     const closeModal = () => setShowModal(false);
-
+ 
     // INPUT CHANGE
     const handleChange = (e) => {
         const { name, value, files } = e.target;
-
+ 
         if (name === "image") {
             setFormData(prev => ({ ...prev, image: files[0] }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
-
+ 
     // SUBMIT FORM
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+ 
         if (!formData.series_id) {
             toast.error("Please select series");
             return;
         }
-
+ 
         const data = new FormData();
         data.append("series_id", formData.series_id);
         data.append("title", formData.title);
@@ -123,23 +123,23 @@ const Sessions = () => {
         data.append("free_episodes", formData.free_episodes || 0);
         data.append("price_per_episode", formData.price_per_episode || 0);
         data.append("full_season_price", formData.full_season_price || 0);
-
+ 
         if (formData.image) {
             data.append("image", formData.image);
         }
-
-        let url = `${API_BASE}/create-sessions`;
-
+ 
+        let url = `${API_BASE}/session-create`;
+ 
         if (formData.id) {
             data.append("id", formData.id);
             url = `${API_BASE}/session-update`;
         }
-
+ 
         try {
             const res = await axios.post(url, data, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-
+ 
             if (res.data.status) {
                 toast.success(formData.id ? "Session Updated" : "Session Created");
                 fetchSessions();
@@ -147,13 +147,13 @@ const Sessions = () => {
             } else {
                 toast.error(res.data.message || "Validation Error");
             }
-
+ 
         } catch (error) {
             console.error(error.response?.data);
             toast.error("Server Error");
         }
     };
-
+ 
     // DELETE SESSION
     const handleDelete = async (id) => {
         const confirm = await Swal.fire({
@@ -162,9 +162,9 @@ const Sessions = () => {
             icon: "warning",
             showCancelButton: true
         });
-
+ 
         if (!confirm.isConfirmed) return;
-
+ 
         try {
             const res = await axios.post(`${API_BASE}/session-delete`, { id });
             if (res.data.status) {
@@ -175,33 +175,33 @@ const Sessions = () => {
             toast.error("Delete failed");
         }
     };
-
+ 
     // FILTER + PAGINATION
     const filtered = sessionsWithSeries.filter(s =>
         s.title.toLowerCase().includes(search.toLowerCase())
     );
-
+ 
     const totalPages = Math.ceil(filtered.length / perPage);
     const current = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
-
+ 
     return (
         <div className="container mt-4">
             <ToastContainer />
-
+ 
             <div className="d-flex justify-content-between mb-3">
                 <h3>Sessions</h3>
                 <button className="btn btn-primary" onClick={() => openModal()}>
                     Create Session
                 </button>
             </div>
-
+ 
             <input
                 className="form-control mb-3"
                 placeholder="Search..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
             />
-
+ 
             <table className="table table-bordered">
                 <thead>
                     <tr>
@@ -235,7 +235,7 @@ const Sessions = () => {
                     )) : <tr><td colSpan="9" className="text-center">No data</td></tr>}
                 </tbody>
             </table>
-
+ 
             {/* MODAL */}
             {showModal && (
                 <div className="modal show d-block" style={{background:'rgba(0,0,0,0.5)'}}>
@@ -246,23 +246,23 @@ const Sessions = () => {
                                     <h5>{formData.id ? "Update" : "Create"} Session</h5>
                                     <button type="button" className="btn-close" onClick={closeModal}></button>
                                 </div>
-
+ 
                                 <div className="modal-body">
                                     <select className="form-select mb-2" name="series_id" value={formData.series_id} onChange={handleChange} required>
                                         <option value="">Select Series</option>
                                         {seriesList.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                                     </select>
-
+ 
                                     <input className="form-control mb-2" name="title" placeholder="Title" value={formData.title} onChange={handleChange} required />
                                     <textarea className="form-control mb-2" name="description" placeholder="Description" value={formData.description} onChange={handleChange} required></textarea>
-
+ 
                                     <input className="form-control mb-2" type="number" name="free_episodes" placeholder="Free Episodes" value={formData.free_episodes} onChange={handleChange} />
                                     <input className="form-control mb-2" type="number" name="price_per_episode" placeholder="Price Per Episode" value={formData.price_per_episode} onChange={handleChange} />
                                     <input className="form-control mb-2" type="number" name="full_season_price" placeholder="Full Season Price" value={formData.full_season_price} onChange={handleChange} />
-
+ 
                                     <input className="form-control mb-2" type="file" name="image" onChange={handleChange} />
                                 </div>
-
+ 
                                 <div className="modal-footer">
                                     <button type="submit" className="btn btn-primary">{formData.id?"Update":"Create"}</button>
                                 </div>
@@ -274,5 +274,7 @@ const Sessions = () => {
         </div>
     );
 };
-
+ 
 export default Sessions;
+ 
+ 
