@@ -67,6 +67,8 @@ const Sidebar = ({ collapsed }) => {
         { icon: <FaTasks />, label: 'Plan Management', path: '/plans' },
 
         { icon: <FaTasks />, label: 'User Management', path: '/users-list' },
+        { icon: <FaTasks />, label: 'Monitor purchases Management', path: '/monitor-purchases' },
+
     ];
 
     const handleLogout = () => {

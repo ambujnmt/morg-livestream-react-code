@@ -2,52 +2,48 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'react-toastify/dist/ReactToastify.css';
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const Series = () => {
+
+    const API_BASE = "https://site2demo.in/livestreaming/api";
+
     const [seriesList, setSeriesList] = useState([]);
     const [categories, setCategories] = useState([]);
+
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const perPage = 5;
 
     const [showModal, setShowModal] = useState(false);
+
     const [formData, setFormData] = useState({
-        id: '',
-        title: '',
-        category_id: '',
-        description: ''
+        id: "",
+        title: "",
+        category_id: "",
+        description: "",
+        image: null,      
+        old_image: "" 
     });
 
-    const API_BASE = 'https://site2demo.in/livestreaming/api';
-
-    // Fetch series
+    // Fetch Series
     const fetchSeries = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`${API_BASE}/series-list`, {
-                headers: { Accept: 'application/json' }
-            });
-            if (res.data && res.data.data) setSeriesList(res.data.data);
-        } catch (error) {
-            console.error(error.response?.data || error.message);
-            toast.error('Failed to fetch series');
+            const res = await axios.get(`${API_BASE}/series-list`);
+            setSeriesList(res.data.data);
+        } catch {
+            toast.error("Failed to fetch series");
         }
         setLoading(false);
     };
 
-    // Fetch categories
+    // Fetch Categories
     const fetchCategories = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/categories-list`, {
-                headers: { Accept: 'application/json' }
-            });
-            if (res.data && res.data.data) setCategories(res.data.data);
-        } catch (error) {
-            console.error(error.response?.data || error.message);
-            toast.error('Failed to fetch categories');
+            const res = await axios.get(`${API_BASE}/categories-list`);
+            setCategories(res.data.data);
+        } catch {
+            toast.error("Failed to fetch categories");
         }
     };
 
@@ -56,215 +52,286 @@ const Series = () => {
         fetchCategories();
     }, []);
 
-    // Open modal for create or edit
-    const openModal = (series = { id: '', title: '', category_id: '', description: '' }) => {
-        setFormData({
-            id: series.id || '',
-            title: series.title || '',
-            category_id: series.category_id || series.category?.id || '',
-            description: series.description || ''
-        });
+    // Open Modal (Create + Edit)
+    const openModal = (data = null) => {
+        if (data) {
+            setFormData({
+                id: data.id,
+                title: data.title,
+                category_id: data.category?.id,
+                description: data.description,
+                image: null,
+                old_image: data.image
+            });
+        } else {
+            setFormData({
+                id: "",
+                title: "",
+                category_id: "",
+                description: "",
+                image: null,
+                old_image: ""
+            });
+        }
         setShowModal(true);
     };
 
     const closeModal = () => setShowModal(false);
 
-    // Handle input change
+    // Handle Input
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, files } = e.target;
+
+        if (name === "image") {
+            setFormData((p) => ({ ...p, image: files[0] }));
+        } else {
+            setFormData((p) => ({ ...p, [name]: value }));
+        }
     };
 
-    // Create or update series
+    // Create / Update Submit
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!formData.title || !formData.category_id || !formData.description) {
-            toast.error('All fields are required');
+            toast.error("All fields required");
             return;
         }
 
+        const data = new FormData();
+        data.append("title", formData.title);
+        data.append("category_id", formData.category_id);
+        data.append("description", formData.description);
+
+        if (formData.image) data.append("image", formData.image);
+        if (formData.id) data.append("id", formData.id);
+
+        const url = formData.id
+            ? `${API_BASE}/series-update`
+            : `${API_BASE}/series-create`;
+
         try {
-            const data = new FormData();
-            data.append('title', formData.title);
-            data.append('category_id', formData.category_id);
-            data.append('description', formData.description);
-
-            let url = '';
-            if (formData.id) {
-                // Update
-                data.append('id', formData.id);
-                url = `${API_BASE}/series-update`;
-            } else {
-                // Create
-                url = `${API_BASE}/series`;
-            }
-
             const res = await axios.post(url, data, {
-                headers: { Accept: 'application/json' }
+                headers: { "Content-Type": "multipart/form-data" }
             });
 
             if (res.data.status) {
-                toast.success(`Series ${formData.id ? 'updated' : 'created'} successfully!`);
+                toast.success(`Series ${formData.id ? "updated" : "created"} successfully!`);
                 fetchSeries();
                 closeModal();
             } else {
-                toast.error(res.data.message || 'Failed to save series');
+                toast.error(res.data.message || "Error");
             }
-        } catch (error) {
-            console.error(error.response?.data || error.message);
-            toast.error('Failed to save series');
+        } catch {
+            toast.error("Something went wrong");
         }
     };
 
-    // Delete series
+    // Delete
     const handleDelete = async (id) => {
-        const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: 'This will delete the series permanently!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+        const confirm = await Swal.fire({
+            title: "Confirm?",
+            text: "Delete this series permanently?",
+            icon: "warning",
+            showCancelButton: true
         });
 
-        if (result.isConfirmed) {
+        if (confirm.isConfirmed) {
             try {
-                const res = await axios.post(`${API_BASE}/series-delete`, { id }, {
-                    headers: { Accept: 'application/json' }
-                });
+                const res = await axios.post(`${API_BASE}/series-delete`, { id });
 
                 if (res.data.status) {
-                    toast.success('Series deleted successfully!');
+                    toast.success("Series Deleted");
                     fetchSeries();
                 } else {
-                    toast.error(res.data.message || 'Failed to delete series');
+                    toast.error("Delete failed");
                 }
-            } catch (error) {
-                console.error(error.response?.data || error.message);
-                toast.error('Failed to delete series');
+            } catch {
+                toast.error("Error deleting");
             }
         }
     };
 
-    // Search filter
-    const filteredSeries = seriesList.filter(s =>
-        (s.title || '').toLowerCase().includes(search.toLowerCase())
+    // Filtered list
+    const filteredSeries = seriesList.filter((s) =>
+        s.title?.toLowerCase().includes(search.toLowerCase())
     );
-
-    // Pagination
-    const indexOfLast = currentPage * perPage;
-    const indexOfFirst = indexOfLast - perPage;
-    const currentSeries = filteredSeries.slice(indexOfFirst, indexOfLast);
-    const totalPages = Math.ceil(filteredSeries.length / perPage);
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     return (
         <div className="container mt-4">
-            <div className="d-flex justify-content-between mb-3">
+
+            <div className="d-flex justify-content-between align-items-center mb-3">
                 <h3>Series</h3>
-                <button className="btn btn-primary" onClick={() => openModal()}>Create Series</button>
+                <button className="btn btn-primary" onClick={() => openModal()}>
+                    + Create Series
+                </button>
             </div>
 
             {/* Search */}
             <input
                 type="text"
                 className="form-control mb-3"
-                placeholder="Search series..."
+                placeholder="Search Series..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
             />
 
             {/* Table */}
-            {loading ? (
-                <p>Loading...</p>
-            ) : (
-                <table className="table table-bordered table-striped align-middle">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th>Description</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {currentSeries.length > 0 ? (
-                            currentSeries.map((s, idx) => (
-                                <tr key={s.id}>
-                                    <td>{idx + 1 + (currentPage - 1) * perPage}</td>
-                                    <td>{s.title}</td>
-                                    <td>{s.category?.name || '-'}</td>
-                                    <td>{s.description}</td>
-                                    <td>
-                                        <button className="btn btn-warning btn-sm me-2" onClick={() => openModal(s)}>Edit</button>
-                                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s.id)}>Delete</button>
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="5" className="text-center text-muted">No series found</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            )}
+            <table className="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Image</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th width="150">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {filteredSeries.length ? (
+                        filteredSeries.map((s, i) => (
+                            <tr key={s.id}>
+                                <td>{i + 1}</td>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <nav>
-                    <ul className="pagination">
-                        {[...Array(totalPages)].map((_, i) => (
-                            <li key={i + 1} className={`page-item ${i + 1 === currentPage ? 'active' : ''}`}>
-                                <button className="page-link" onClick={() => paginate(i + 1)}>{i + 1}</button>
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
-            )}
+                                <td>
+                                    {s.image ? (
+                                        <img
+                                            src={`https://site2demo.in/livestreaming/public/${s.image}`}
+                                            style={{ width: 60, height: 60, borderRadius: 6, objectFit: "cover" }}
+                                            alt="img"
+                                        />
+                                    ) : (
+                                        "No Image"
+                                    )}
+                                </td>
+
+                                <td>{s.title}</td>
+                                <td>{s.category?.name}</td>
+                                <td>{s.description}</td>
+
+                                <td>
+                                    <button
+                                        className="btn btn-warning btn-sm me-2"
+                                        onClick={() => openModal(s)}
+                                    >
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => handleDelete(s.id)}
+                                    >
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="6" className="text-center text-muted">No Series Found</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
 
             {/* Modal */}
             {showModal && (
-                <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
-                    <div className="modal-dialog">
+                <div className="modal show fade d-block" style={{ background: "rgba(0,0,0,0.4)" }}>
+                    <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
+
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-header">
-                                    <h5 className="modal-title">{formData.id ? 'Update Series' : 'Create Series'}</h5>
-                                    <button type="button" className="btn-close" onClick={closeModal}></button>
+                                    <h5 className="modal-title">
+                                        {formData.id ? "Update Series" : "Create Series"}
+                                    </h5>
+                                    <button className="btn-close" onClick={closeModal}></button>
                                 </div>
+
                                 <div className="modal-body">
+
                                     <div className="mb-3">
-                                        <label className="form-label">Title</label>
-                                        <input type="text" name="title" className="form-control" value={formData.title} onChange={handleChange} required />
+                                        <label>Title</label>
+                                        <input
+                                            type="text"
+                                            name="title"
+                                            className="form-control"
+                                            value={formData.title}
+                                            onChange={handleChange}
+                                            required
+                                        />
                                     </div>
 
                                     <div className="mb-3">
-                                        <label className="form-label">Category</label>
-                                        <select name="category_id" className="form-select" value={formData.category_id} onChange={handleChange} required>
-                                            <option value="">-- Select Category --</option>
-                                            {categories.map(cat => (
-                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        <label>Category</label>
+                                        <select
+                                            name="category_id"
+                                            className="form-select"
+                                            value={formData.category_id}
+                                            onChange={handleChange}
+                                            required
+                                        >
+                                            <option value="">Select</option>
+                                            {categories.map((cat) => (
+                                                <option key={cat.id} value={cat.id}>
+                                                    {cat.name}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
 
                                     <div className="mb-3">
-                                        <label className="form-label">Description</label>
-                                        <textarea name="description" className="form-control" rows="4" value={formData.description} onChange={handleChange} required></textarea>
+                                        <label>Description</label>
+                                        <textarea
+                                            name="description"
+                                            className="form-control"
+                                            rows="3"
+                                            value={formData.description}
+                                            onChange={handleChange}
+                                            required
+                                        ></textarea>
                                     </div>
+
+                                    <div className="mb-3">
+                                        <label>Image</label>
+                                        <input
+                                            type="file"
+                                            name="image"
+                                            accept="image/*"
+                                            className="form-control"
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    {/* OLD IMAGE PREVIEW */}
+                                    {formData.old_image && (
+                                        <div className="mb-3 text-center">
+                                            <p className="text-muted">Current Image:</p>
+                                            <img
+                                                src={`https://site2demo.in/livestreaming/public/${formData.old_image}`}
+                                                style={{ width: 100, borderRadius: 8 }}
+                                                alt="old"
+                                            />
+                                        </div>
+                                    )}
+
                                 </div>
+
                                 <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary">{formData.id ? 'Update' : 'Create'}</button>
+                                    <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
+                                    <button className="btn btn-primary">
+                                        {formData.id ? "Update" : "Create"}
+                                    </button>
                                 </div>
+
                             </form>
+
                         </div>
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
