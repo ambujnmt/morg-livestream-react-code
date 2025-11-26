@@ -29,7 +29,8 @@ const Sessions = () => {
         full_season_price: '',
         image: null,
         old_image: '',
-        fresh_hote: false
+        fresh_hote: false,
+        season_name: ''  // New field for season name
     };
 
     const [formData, setFormData] = useState(initialForm);
@@ -84,7 +85,8 @@ const Sessions = () => {
                 full_season_price: session.full_season_price,
                 image: null,
                 old_image: session.image,
-                fresh_hote: session.fresh_hote == 1 ? true : false
+                fresh_hote: session.fresh_hote == 1 ? true : false,
+                season_name: session.season_name || ''  // Set season name if available
             });
         } else {
             setFormData(initialForm);
@@ -103,7 +105,7 @@ const Sessions = () => {
         } 
         else if (name === "fresh_hote") {
             setFormData(prev => ({ ...prev, fresh_hote: checked }));
-        } 
+        }
         else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -125,6 +127,7 @@ const Sessions = () => {
         data.append("free_episodes", formData.free_episodes || 0);
         data.append("price_per_episode", formData.price_per_episode || 0);
         data.append("full_season_price", formData.full_season_price || 0);
+        data.append("season_name", formData.season_name);  // Include season name in the data
         data.append("fresh_hote", formData.fresh_hote ? 1 : 0);
 
         if (formData.image) {
@@ -269,6 +272,9 @@ const Sessions = () => {
                                     <input className="form-control mb-2" type="number" name="price_per_episode" placeholder="Price Per Episode" value={formData.price_per_episode} onChange={handleChange} />
 
                                     <input className="form-control mb-2" type="number" name="full_season_price" placeholder="Full Season Price" value={formData.full_season_price} onChange={handleChange} />
+
+                                    {/* New Season Name Input */}
+                                    <input className="form-control mb-2" name="season_name" placeholder="Season Name" value={formData.season_name} onChange={handleChange} />
 
                                     <div className="form-check mb-2">
                                         <input className="form-check-input" type="checkbox" name="fresh_hote" checked={formData.fresh_hote} onChange={handleChange} />
