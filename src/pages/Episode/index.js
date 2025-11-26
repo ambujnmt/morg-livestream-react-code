@@ -9,10 +9,7 @@ const Episode = () => {
   const baseURL = "https://site2demo.in/livestreaming/api";
 
   const [title, setTitle] = useState("");
-<<<<<<< HEAD
-  const [episodeName, setEpisodeName] = useState(""); // New state for Episode Name
-=======
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
+  const [episodeName, setEpisodeName] = useState(""); 
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState(null);
   const [videoURL, setVideoURL] = useState("");
@@ -103,10 +100,7 @@ const Episode = () => {
 
   const resetForm = () => {
     setTitle("");
-<<<<<<< HEAD
     setEpisodeName(""); // Reset episode name
-=======
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
     setDescription("");
     setVideoFile(null);
     setVideoURL("");
@@ -130,10 +124,7 @@ const Episode = () => {
 
   const handleEdit = (video) => {
     setTitle(video.title);
-<<<<<<< HEAD
     setEpisodeName(video.episode_name || ""); // Set episode name if available
-=======
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
     setDescription(video.description);
     setSeriesId(String(video.series_id));
     setSessionId(String(video.session_id));
@@ -194,10 +185,7 @@ const Episode = () => {
       let formData = new FormData();
 
       formData.append("title", title);
-<<<<<<< HEAD
-      formData.append("episode_name", episodeName); 
-=======
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
+      formData.append("episode_name", episodeName); // Add episode name
       formData.append("description", description);
       formData.append("series_id", seriesId);
       formData.append("session_id", sessionId);
@@ -248,7 +236,6 @@ const Episode = () => {
 
   return (
     <div className="container my-5">
-      {/* Header */}
       <div className="d-flex justify-content-between mb-3">
         <h2>Episodes</h2>
         <Button
@@ -262,7 +249,6 @@ const Episode = () => {
         </Button>
       </div>
 
-      {/* Search */}
       <Form.Control
         type="text"
         placeholder="Search episode..."
@@ -271,7 +257,6 @@ const Episode = () => {
         className="mb-4"
       />
 
-      {/* Table */}
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -349,7 +334,6 @@ const Episode = () => {
 
         <Modal.Body>
           <form onSubmit={handleFormSubmit}>
-            {/* Series */}
             <div className="mb-3">
               <label className="form-label">Series</label>
               <select
@@ -367,8 +351,6 @@ const Episode = () => {
               </select>
             </div>
 
-<<<<<<< HEAD
-            {/* Episode Name */}
             <div className="mb-3">
               <label className="form-label">Episode Name</label>
               <input
@@ -380,9 +362,6 @@ const Episode = () => {
               />
             </div>
 
-=======
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
-            {/* Category */}
             <div className="mb-3">
               <label className="form-label">Category</label>
               <div className="form-control bg-light">
@@ -394,7 +373,6 @@ const Episode = () => {
               </div>
             </div>
 
-            {/* Season */}
             <div className="mb-3">
               <label className="form-label">Season</label>
               <select
@@ -412,7 +390,6 @@ const Episode = () => {
               </select>
             </div>
 
-            {/* Title */}
             <div className="mb-3">
               <label className="form-label">Title</label>
               <input
@@ -424,7 +401,6 @@ const Episode = () => {
               />
             </div>
 
-            {/* Description */}
             <div className="mb-3">
               <label className="form-label">Description</label>
               <textarea
@@ -435,7 +411,6 @@ const Episode = () => {
               ></textarea>
             </div>
 
-            {/* Switch */}
             <div className="mb-3 form-check form-switch">
               <input
                 className="form-check-input"
@@ -449,11 +424,6 @@ const Episode = () => {
               </label>
             </div>
 
-<<<<<<< HEAD
-=======
-        
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
-            {/* Video */}
             {useFileUpload ? (
               <div className="mb-3">
                 <label>Video File (Max 50MB)</label>
@@ -485,12 +455,7 @@ const Episode = () => {
                 style={{ borderRadius: "8px" }}
               ></video>
             )}
-           
-<<<<<<< HEAD
-            {/* Image */}
-=======
-           {/* Image */}
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
+
             <div className="mb-3">
               <label>Episode Image</label>
               <input
@@ -509,12 +474,13 @@ const Episode = () => {
                 style={{ borderRadius: "8px" }}
               />
             )}
-<<<<<<< HEAD
 
-=======
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
-            {/* Button */}
-            <Button type="submit" variant="primary" className="mt-3" disabled={loading}>
+            <Button
+              type="submit"
+              variant="primary"
+              className="mt-3"
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-2" />
