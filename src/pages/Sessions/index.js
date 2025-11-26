@@ -6,20 +6,18 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
  
 const Sessions = () => {
- 
     const API_BASE = 'https://site2demo.in/livestreaming/api';
-    const IMG_BASE = 'https://site2demo.in/livestreaming/';
+    const IMG_BASE = 'https://site2demo.in/livestreaming/public/';
  
     const [sessions, setSessions] = useState([]);
     const [seriesList, setSeriesList] = useState([]);
     const [sessionsWithSeries, setSessionsWithSeries] = useState([]);
  
-    const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showModal, setShowModal] = useState(false);
  
-    const perPage = 5;
+    const perPage = 50;
  
     const initialForm = {
         id: '',
@@ -30,7 +28,8 @@ const Sessions = () => {
         price_per_episode: '',
         full_season_price: '',
         image: null,
-        old_image: ''
+        old_image: '',
+        fresh_hote: false
     };
  
     const [formData, setFormData] = useState(initialForm);
@@ -47,19 +46,17 @@ const Sessions = () => {
  
     // FETCH SESSIONS
     const fetchSessions = async () => {
-        setLoading(true);
         try {
             const res = await axios.get(`${API_BASE}/sessions-list`);
             if (res.data?.data) setSessions(res.data.data);
         } catch {
             toast.error("Failed to load sessions");
         }
-        setLoading(false);
     };
  
     const mergeData = () => {
         const map = {};
-        seriesList.forEach(s => map[s.id] = s);
+        seriesList.forEach(s => (map[s.id] = s));
         setSessionsWithSeries(
             sessions.map(sess => ({ ...sess, series: map[sess.series_id] }))
         );
@@ -86,7 +83,8 @@ const Sessions = () => {
                 price_per_episode: session.price_per_episode,
                 full_season_price: session.full_season_price,
                 image: null,
-                old_image: session.image
+                old_image: session.image,
+                fresh_hote: session.fresh_hote == 1 ? true : false
             });
         } else {
             setFormData(initialForm);
@@ -96,13 +94,17 @@ const Sessions = () => {
  
     const closeModal = () => setShowModal(false);
  
-    // INPUT CHANGE
+    // HANDLE FORM CHANGES
     const handleChange = (e) => {
-        const { name, value, files } = e.target;
+        const { name, value, files, checked } = e.target;
  
         if (name === "image") {
             setFormData(prev => ({ ...prev, image: files[0] }));
-        } else {
+        }
+        else if (name === "fresh_hote") {
+            setFormData(prev => ({ ...prev, fresh_hote: checked }));
+        }
+        else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
@@ -123,6 +125,7 @@ const Sessions = () => {
         data.append("free_episodes", formData.free_episodes || 0);
         data.append("price_per_episode", formData.price_per_episode || 0);
         data.append("full_season_price", formData.full_season_price || 0);
+        data.append("fresh_hote", formData.fresh_hote ? 1 : 0);
  
         if (formData.image) {
             data.append("image", formData.image);
@@ -147,9 +150,7 @@ const Sessions = () => {
             } else {
                 toast.error(res.data.message || "Validation Error");
             }
- 
         } catch (error) {
-            console.error(error.response?.data);
             toast.error("Server Error");
         }
     };
@@ -176,7 +177,6 @@ const Sessions = () => {
         }
     };
  
-    // FILTER + PAGINATION
     const filtered = sessionsWithSeries.filter(s =>
         s.title.toLowerCase().includes(search.toLowerCase())
     );
@@ -213,13 +213,14 @@ const Sessions = () => {
                         <th>Free</th>
                         <th>Price</th>
                         <th>Full</th>
+                        <th>Fresh</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {current.length ? current.map((s,i)=>(
+                    {current.length ? current.map((s, i) => (
                         <tr key={s.id}>
-                            <td>{i+1}</td>
+                            <td>{i + 1}</td>
                             <td>{s.image ? <img src={`${IMG_BASE}${s.image}`} width="60" /> : "No Image"}</td>
                             <td>{s.title}</td>
                             <td>{s.series?.title}</td>
@@ -227,18 +228,22 @@ const Sessions = () => {
                             <td>{s.free_episodes}</td>
                             <td>{s.price_per_episode}</td>
                             <td>{s.full_season_price}</td>
+                            <td>{s.fresh_hote == 1 ? 'Yes' : 'No'}</td>
                             <td>
-                                <button className="btn btn-warning btn-sm me-1" onClick={()=>openModal(s)}>Edit</button>
-                                <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(s.id)}>Delete</button>
+                                <button className="btn btn-warning btn-sm me-1" onClick={() => openModal(s)}>Edit</button>
+                                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s.id)}>Delete</button>
                             </td>
                         </tr>
-                    )) : <tr><td colSpan="9" className="text-center">No data</td></tr>}
+                    )) : (
+                        <tr>
+                            <td colSpan="10" className="text-center">No data</td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
  
-            {/* MODAL */}
             {showModal && (
-                <div className="modal show d-block" style={{background:'rgba(0,0,0,0.5)'}}>
+                <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }}>
                     <div className="modal-dialog">
                         <div className="modal-content">
                             <form onSubmit={handleSubmit}>
@@ -250,21 +255,33 @@ const Sessions = () => {
                                 <div className="modal-body">
                                     <select className="form-select mb-2" name="series_id" value={formData.series_id} onChange={handleChange} required>
                                         <option value="">Select Series</option>
-                                        {seriesList.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                                        {seriesList.map(s => (
+                                            <option key={s.id} value={s.id}>{s.title}</option>
+                                        ))}
                                     </select>
  
                                     <input className="form-control mb-2" name="title" placeholder="Title" value={formData.title} onChange={handleChange} required />
-                                    <textarea className="form-control mb-2" name="description" placeholder="Description" value={formData.description} onChange={handleChange} required></textarea>
+ 
+                                    <textarea className="form-control mb-2" name="description" placeholder="Description" value={formData.description} onChange={handleChange} required />
  
                                     <input className="form-control mb-2" type="number" name="free_episodes" placeholder="Free Episodes" value={formData.free_episodes} onChange={handleChange} />
+ 
                                     <input className="form-control mb-2" type="number" name="price_per_episode" placeholder="Price Per Episode" value={formData.price_per_episode} onChange={handleChange} />
+ 
                                     <input className="form-control mb-2" type="number" name="full_season_price" placeholder="Full Season Price" value={formData.full_season_price} onChange={handleChange} />
+ 
+                                    <div className="form-check mb-2">
+                                        <input className="form-check-input" type="checkbox" name="fresh_hote" checked={formData.fresh_hote} onChange={handleChange} />
+                                        <label className="form-check-label">Fresh & Hote</label>
+                                    </div>
  
                                     <input className="form-control mb-2" type="file" name="image" onChange={handleChange} />
                                 </div>
  
                                 <div className="modal-footer">
-                                    <button type="submit" className="btn btn-primary">{formData.id?"Update":"Create"}</button>
+                                    <button type="submit" className="btn btn-primary">
+                                        {formData.id ? "Update" : "Create"}
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -276,5 +293,3 @@ const Sessions = () => {
 };
  
 export default Sessions;
- 
- 
