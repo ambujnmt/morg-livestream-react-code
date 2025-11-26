@@ -5,6 +5,9 @@ import { FaEye, FaTrash } from "react-icons/fa";
 import { Modal, Button } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
+
+const BASE_URL = "https://site2demo.in/livestreaming/api";
+
 const Monitorpurchases = () => {
   const [purchases, setPurchases] = useState([]);
   const [search, setSearch] = useState("");
@@ -13,7 +16,6 @@ const Monitorpurchases = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
 
-  // Fetch token from localStorage
   const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -22,14 +24,28 @@ const Monitorpurchases = () => {
 
   const fetchPurchases = async () => {
     try {
-      const res = await axios.get("https://site2demo.in/livestreaming/api/purchases-list");
-      if (res.data && res.data.data) {
+      setLoading(true);
+      const res = await axios.get(`${BASE_URL}/purchases-list`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      console.log("PURCHASE LIST RESPONSE:", res.data);
+
+      // ✅ Handle all possible API structures
+      if (res.data.status === true || res.data.status === 1) {
+        setPurchases(res.data.data || []);
+      } else if (Array.isArray(res.data)) {
+        setPurchases(res.data);
+      } else if (res.data.data) {
         setPurchases(res.data.data);
       } else {
         setPurchases([]);
       }
     } catch (err) {
-      console.log(err);
+      console.error("Fetch Error:", err);
       setError("Failed to load purchases.");
     } finally {
       setLoading(false);
@@ -37,26 +53,20 @@ const Monitorpurchases = () => {
   };
 
   const filtered = purchases.filter((item) =>
-    item.video?.title?.toLowerCase().includes(search.toLowerCase())
+    item?.video?.title?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const options = { day: "numeric", month: "short", year: "numeric" };
-    return date.toLocaleDateString("en-US", options);
-  };
-
   const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
     const date = new Date(dateString);
-    const options = {
+    return date.toLocaleString("en-US", {
       month: "long",
       day: "numeric",
       year: "numeric",
       hour: "numeric",
       minute: "numeric",
       hour12: true,
-    };
-    return date.toLocaleString("en-US", options);
+    });
   };
 
   const handleViewDetails = (purchase) => {
@@ -69,7 +79,7 @@ const Monitorpurchases = () => {
     setSelectedPurchase(null);
   };
 
-  // Delete handler with token
+  // ✅ DELETE - FULLY FIXED
   const handleDelete = async (purchaseId) => {
     const confirmResult = await Swal.fire({
       title: "Are you sure?",
@@ -81,37 +91,57 @@ const Monitorpurchases = () => {
       confirmButtonText: "Yes, delete it!",
     });
 
-    if (confirmResult.isConfirmed) {
-      try {
-        const formData = new URLSearchParams();
-        formData.append("id", purchaseId);
+    if (!confirmResult.isConfirmed) return;
 
-        // Include token in headers
-        const res = await axios.post(
-          "https://site2demo.in/livestreaming/api/purchases-delete",
-          formData,
-          {
-            headers: {
-              "Accept": "application/json",
-              "Content-Type": "application/x-www-form-urlencoded",
-              "Authorization": `Bearer ${token}`, // Add token here
-            },
-          }
-        );
-        if (res.status === 200) {
-          fetchPurchases();
-          Swal.fire("Deleted!", "Your purchase has been deleted.", "success");
-        }
-      } catch (err) {
-        console.error("Error deleting purchase:", err);
-        Swal.fire("Error!", "Failed to delete the purchase.", "error");
+    try {
+      const formData = new URLSearchParams();
+      formData.append("id", purchaseId);
+
+      const res = await axios.post(`${BASE_URL}/purchases-delete`, formData, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("DELETE RESPONSE:", res.data);
+
+      const success =
+        res.data.status === true ||
+        res.data.status === 1 ||
+        res.data.success === true ||
+        (res.data.message &&
+          res.data.message.toLowerCase().includes("success"));
+
+      if (success) {
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: res.data.message || "Purchase deleted successfully",
+        });
+        fetchPurchases();
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error!",
+          text: res.data.message || "Delete failed",
+        });
       }
+    } catch (err) {
+      console.error("Delete Error:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: "Server error while deleting",
+      });
     }
   };
 
   return (
     <div className="container mt-4">
       <h3>Purchases List</h3>
+
       <input
         type="text"
         className="form-control mb-3"
@@ -140,7 +170,7 @@ const Monitorpurchases = () => {
                 <tr key={item.id}>
                   <td>{item.user?.name || "No Name"}</td>
                   <td>{item.video?.title || "No Title"}</td>
-                  <td>{item.amount}</td>
+                  <td>₹ {item.amount}</td>
                   <td>{formatDateTime(item.purchase_date)}</td>
                   <td>
                     <button
@@ -169,38 +199,22 @@ const Monitorpurchases = () => {
         </table>
       )}
 
-      {/* Modal for details */}
+      {/* VIEW MODAL */}
       <Modal show={showModal} onHide={handleCloseModal}>
         <Modal.Header closeButton>
           <Modal.Title>Purchase Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {selectedPurchase ? (
-            <div>
-              <p>
-                <strong>Name:</strong> {selectedPurchase.user?.name || "No Name"}
-              </p>
-              <p>
-                <strong>Email:</strong> {selectedPurchase.user?.email || "No Email"}
-              </p>
-              <p>
-                <strong>Mobile:</strong> {selectedPurchase.user?.mobile || "No Mobile"}
-              </p>
-              <p>
-                <strong>Video Title:</strong> {selectedPurchase.video?.title || "No Title"}
-              </p>
-              <p>
-                <strong>Amount:</strong> {selectedPurchase.amount}
-              </p>
-              <p>
-                <strong>Purchase Date:</strong> {formatDateTime(selectedPurchase.purchase_date)}
-              </p>
-              <p>
-                <strong>Description:</strong> {selectedPurchase.video?.description || "No Description"}
-              </p>
-            </div>
-          ) : (
-            <p>No details available.</p>
+          {selectedPurchase && (
+            <>
+              <p><strong>Name:</strong> {selectedPurchase.user?.name}</p>
+              <p><strong>Email:</strong> {selectedPurchase.user?.email}</p>
+              <p><strong>Mobile:</strong> {selectedPurchase.user?.mobile}</p>
+              <p><strong>Video:</strong> {selectedPurchase.video?.title}</p>
+              <p><strong>Amount:</strong> ₹ {selectedPurchase.amount}</p>
+              <p><strong>Date:</strong> {formatDateTime(selectedPurchase.purchase_date)}</p>
+              <p><strong>Description:</strong> {selectedPurchase.video?.description}</p>
+            </>
           )}
         </Modal.Body>
         <Modal.Footer>
