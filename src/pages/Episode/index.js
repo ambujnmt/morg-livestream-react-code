@@ -9,7 +9,10 @@ const Episode = () => {
   const baseURL = "https://site2demo.in/livestreaming/api";
 
   const [title, setTitle] = useState("");
+<<<<<<< HEAD
   const [episodeName, setEpisodeName] = useState(""); // New state for Episode Name
+=======
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState(null);
   const [videoURL, setVideoURL] = useState("");
@@ -100,7 +103,10 @@ const Episode = () => {
 
   const resetForm = () => {
     setTitle("");
+<<<<<<< HEAD
     setEpisodeName(""); // Reset episode name
+=======
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
     setDescription("");
     setVideoFile(null);
     setVideoURL("");
@@ -124,7 +130,10 @@ const Episode = () => {
 
   const handleEdit = (video) => {
     setTitle(video.title);
+<<<<<<< HEAD
     setEpisodeName(video.episode_name || ""); // Set episode name if available
+=======
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
     setDescription(video.description);
     setSeriesId(String(video.series_id));
     setSessionId(String(video.session_id));
@@ -185,7 +194,10 @@ const Episode = () => {
       let formData = new FormData();
 
       formData.append("title", title);
+<<<<<<< HEAD
       formData.append("episode_name", episodeName); 
+=======
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
       formData.append("description", description);
       formData.append("series_id", seriesId);
       formData.append("session_id", sessionId);
@@ -355,6 +367,7 @@ const Episode = () => {
               </select>
             </div>
 
+<<<<<<< HEAD
             {/* Episode Name */}
             <div className="mb-3">
               <label className="form-label">Episode Name</label>
@@ -367,6 +380,8 @@ const Episode = () => {
               />
             </div>
 
+=======
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
             {/* Category */}
             <div className="mb-3">
               <label className="form-label">Category</label>
@@ -434,6 +449,10 @@ const Episode = () => {
               </label>
             </div>
 
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
             {/* Video */}
             {useFileUpload ? (
               <div className="mb-3">
@@ -467,7 +486,11 @@ const Episode = () => {
               ></video>
             )}
            
+<<<<<<< HEAD
             {/* Image */}
+=======
+           {/* Image */}
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
             <div className="mb-3">
               <label>Episode Image</label>
               <input
@@ -486,7 +509,10 @@ const Episode = () => {
                 style={{ borderRadius: "8px" }}
               />
             )}
+<<<<<<< HEAD
 
+=======
+>>>>>>> 89b56390898e36084e14c162f016701a9007aecc
             {/* Button */}
             <Button type="submit" variant="primary" className="mt-3" disabled={loading}>
               {loading ? (
