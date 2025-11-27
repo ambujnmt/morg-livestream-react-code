@@ -4,21 +4,21 @@ import { toast, ToastContainer } from 'react-toastify';
 import Swal from 'sweetalert2';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
- 
+
 const Sessions = () => {
     const API_BASE = 'https://site2demo.in/livestreaming/api';
     const IMG_BASE = 'https://site2demo.in/livestreaming/public/';
- 
+
     const [sessions, setSessions] = useState([]);
     const [seriesList, setSeriesList] = useState([]);
     const [sessionsWithSeries, setSessionsWithSeries] = useState([]);
- 
+
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showModal, setShowModal] = useState(false);
- 
+
     const perPage = 50;
- 
+
     const initialForm = {
         id: '',
         series_id: '',
@@ -30,12 +30,12 @@ const Sessions = () => {
         image: null,
         old_image: '',
         fresh_hote: false,
-        season_name: ''  // New field for season name
+        season_name: ''
     };
- 
+
     const [formData, setFormData] = useState(initialForm);
- 
-    // FETCH SERIES
+
+    // Fetch Series
     const fetchSeries = async () => {
         try {
             const res = await axios.get(`${API_BASE}/series-list`);
@@ -44,8 +44,8 @@ const Sessions = () => {
             toast.error("Failed to load series");
         }
     };
- 
-    // FETCH SESSIONS
+
+    // Fetch Sessions
     const fetchSessions = async () => {
         try {
             const res = await axios.get(`${API_BASE}/sessions-list`);
@@ -54,7 +54,8 @@ const Sessions = () => {
             toast.error("Failed to load sessions");
         }
     };
- 
+
+    // Merge Series and Sessions Data
     const mergeData = () => {
         const map = {};
         seriesList.forEach(s => (map[s.id] = s));
@@ -62,17 +63,17 @@ const Sessions = () => {
             sessions.map(sess => ({ ...sess, series: map[sess.series_id] }))
         );
     };
- 
+
     useEffect(() => {
         fetchSeries();
         fetchSessions();
     }, []);
- 
+
     useEffect(() => {
         if (seriesList.length && sessions.length) mergeData();
     }, [seriesList, sessions]);
- 
-    // OPEN MODAL
+
+    // Open Modal
     const openModal = (session = null) => {
         if (session) {
             setFormData({
@@ -86,40 +87,38 @@ const Sessions = () => {
                 image: null,
                 old_image: session.image,
                 fresh_hote: session.fresh_hote == 1 ? true : false,
-                season_name: session.season_name || ''  // Set season name if available
+                season_name: session.season_name || ''
             });
         } else {
             setFormData(initialForm);
         }
         setShowModal(true);
     };
- 
+
     const closeModal = () => setShowModal(false);
- 
-    // HANDLE FORM CHANGES
+
+    // Handle Form Changes
     const handleChange = (e) => {
         const { name, value, files, checked } = e.target;
- 
+
         if (name === "image") {
             setFormData(prev => ({ ...prev, image: files[0] }));
-        }
-        else if (name === "fresh_hote") {
+        } else if (name === "fresh_hote") {
             setFormData(prev => ({ ...prev, fresh_hote: checked }));
-        }
-        else {
+        } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
- 
-    // SUBMIT FORM
+
+    // Submit Form
     const handleSubmit = async (e) => {
         e.preventDefault();
- 
+
         if (!formData.series_id) {
             toast.error("Please select series");
             return;
         }
- 
+
         const data = new FormData();
         data.append("series_id", formData.series_id);
         data.append("title", formData.title);
@@ -127,25 +126,25 @@ const Sessions = () => {
         data.append("free_episodes", formData.free_episodes || 0);
         data.append("price_per_episode", formData.price_per_episode || 0);
         data.append("full_season_price", formData.full_season_price || 0);
-        data.append("season_name", formData.season_name);  // Include season name in the data
+        data.append("season_name", formData.season_name);
         data.append("fresh_hote", formData.fresh_hote ? 1 : 0);
- 
+
         if (formData.image) {
             data.append("image", formData.image);
         }
- 
+
         let url = `${API_BASE}/session-create`;
- 
+
         if (formData.id) {
             data.append("id", formData.id);
             url = `${API_BASE}/session-update`;
         }
- 
+
         try {
             const res = await axios.post(url, data, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
- 
+
             if (res.data.status) {
                 toast.success(formData.id ? "Session Updated" : "Session Created");
                 fetchSessions();
@@ -157,8 +156,8 @@ const Sessions = () => {
             toast.error("Server Error");
         }
     };
- 
-    // DELETE SESSION
+
+    // Delete Session
     const handleDelete = async (id) => {
         const confirm = await Swal.fire({
             title: "Are you sure?",
@@ -166,9 +165,9 @@ const Sessions = () => {
             icon: "warning",
             showCancelButton: true
         });
- 
+
         if (!confirm.isConfirmed) return;
- 
+
         try {
             const res = await axios.post(`${API_BASE}/session-delete`, { id });
             if (res.data.status) {
@@ -179,32 +178,32 @@ const Sessions = () => {
             toast.error("Delete failed");
         }
     };
- 
+
     const filtered = sessionsWithSeries.filter(s =>
         s.title.toLowerCase().includes(search.toLowerCase())
     );
- 
+
     const totalPages = Math.ceil(filtered.length / perPage);
     const current = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
- 
+
     return (
         <div className="container mt-4">
             <ToastContainer />
- 
+
             <div className="d-flex justify-content-between mb-3">
                 <h3>Sessions</h3>
                 <button className="btn btn-primary" onClick={() => openModal()}>
                     Create Session
                 </button>
             </div>
- 
+
             <input
                 className="form-control mb-3"
                 placeholder="Search..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
             />
- 
+
             <table className="table table-bordered">
                 <thead>
                     <tr>
@@ -224,7 +223,7 @@ const Sessions = () => {
                     {current.length ? current.map((s, i) => (
                         <tr key={s.id}>
                             <td>{i + 1}</td>
-                            <td>{s.image ? <img src={`${IMG_BASE}${s.image}`} width="60" /> : "No Image"}</td>
+                            <td>{s.image ? <img src={`${IMG_BASE}${s.image}`} width="60" alt="Session Image" /> : "No Image"}</td>
                             <td>{s.title}</td>
                             <td>{s.series?.title}</td>
                             <td>{s.description}</td>
@@ -244,7 +243,26 @@ const Sessions = () => {
                     )}
                 </tbody>
             </table>
- 
+
+            {/* Pagination */}
+            <div className="d-flex justify-content-between">
+                <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                >
+                    Previous
+                </button>
+                <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                >
+                    Next
+                </button>
+            </div>
+
+            {/* Modal for Create/Edit Session */}
             {showModal && (
                 <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }}>
                     <div className="modal-dialog">
@@ -254,40 +272,93 @@ const Sessions = () => {
                                     <h5>{formData.id ? "Update" : "Create"} Session</h5>
                                     <button type="button" className="btn-close" onClick={closeModal}></button>
                                 </div>
- 
+
                                 <div className="modal-body">
-                                    <select className="form-select mb-2" name="series_id" value={formData.series_id} onChange={handleChange} required>
+                                    <select
+                                        className="form-select mb-2"
+                                        name="series_id"
+                                        value={formData.series_id}
+                                        onChange={handleChange}
+                                        required
+                                    >
                                         <option value="">Select Series</option>
                                         {seriesList.map(s => (
                                             <option key={s.id} value={s.id}>{s.title}</option>
                                         ))}
                                     </select>
- 
-                                    <input className="form-control mb-2" name="title" placeholder="Title" value={formData.title} onChange={handleChange} required />
- 
-                                    <textarea className="form-control mb-2" name="description" placeholder="Description" value={formData.description} onChange={handleChange} required />
- 
-                                    <input className="form-control mb-2" type="number" name="free_episodes" placeholder="Free Episodes" value={formData.free_episodes} onChange={handleChange} />
- 
-                                    <input className="form-control mb-2" type="number" name="price_per_episode" placeholder="Price Per Episode" value={formData.price_per_episode} onChange={handleChange} />
- 
-                                    <input className="form-control mb-2" type="number" name="full_season_price" placeholder="Full Season Price" value={formData.full_season_price} onChange={handleChange} />
-<<<<<<< HEAD
 
-                                    {/* New Season Name Input */}
-                                    <input className="form-control mb-2" name="season_name" placeholder="Season Name" value={formData.season_name} onChange={handleChange} />
+                                    <input
+                                        className="form-control mb-2"
+                                        name="title"
+                                        placeholder="Title"
+                                        value={formData.title}
+                                        onChange={handleChange}
+                                        required
+                                    />
 
-=======
- 
->>>>>>> 89b56390898e36084e14c162f016701a9007aecc
+                                    <textarea
+                                        className="form-control mb-2"
+                                        name="description"
+                                        placeholder="Description"
+                                        value={formData.description}
+                                        onChange={handleChange}
+                                        required
+                                    />
+
+                                    <input
+                                        className="form-control mb-2"
+                                        type="number"
+                                        name="free_episodes"
+                                        placeholder="Free Episodes"
+                                        value={formData.free_episodes}
+                                        onChange={handleChange}
+                                    />
+
+                                    <input
+                                        className="form-control mb-2"
+                                        type="number"
+                                        name="price_per_episode"
+                                        placeholder="Price Per Episode"
+                                        value={formData.price_per_episode}
+                                        onChange={handleChange}
+                                    />
+
+                                    <input
+                                        className="form-control mb-2"
+                                        type="number"
+                                        name="full_season_price"
+                                        placeholder="Full Season Price"
+                                        value={formData.full_season_price}
+                                        onChange={handleChange}
+                                    />
+
+                                    <input
+                                        className="form-control mb-2"
+                                        name="season_name"
+                                        placeholder="Season Name"
+                                        value={formData.season_name}
+                                        onChange={handleChange}
+                                    />
+
                                     <div className="form-check mb-2">
-                                        <input className="form-check-input" type="checkbox" name="fresh_hote" checked={formData.fresh_hote} onChange={handleChange} />
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            name="fresh_hote"
+                                            checked={formData.fresh_hote}
+                                            onChange={handleChange}
+                                        />
                                         <label className="form-check-label">Fresh & Hote</label>
                                     </div>
- 
-                                    <input className="form-control mb-2" type="file" name="image" onChange={handleChange} />
+
+                                    <input
+                                        className="form-control mb-2"
+                                        type="file"
+                                        name="image"
+                                        onChange={handleChange}
+                                    />
                                 </div>
- 
+
                                 <div className="modal-footer">
                                     <button type="submit" className="btn btn-primary">
                                         {formData.id ? "Update" : "Create"}
@@ -301,5 +372,5 @@ const Sessions = () => {
         </div>
     );
 };
- 
+
 export default Sessions;
