@@ -100,7 +100,7 @@ const Episode = () => {
 
   const resetForm = () => {
     setTitle("");
-    setEpisodeName(""); // Reset episode name
+    setEpisodeName("");
     setDescription("");
     setVideoFile(null);
     setVideoURL("");
@@ -128,7 +128,7 @@ const Episode = () => {
     setDescription(video.description);
     setSeriesId(String(video.series_id));
     setSessionId(String(video.session_id));
-    setCategoryId(String(video.category_id));
+    setCategoryId(String(video.category_id)); // Set categoryId for select
     setIsEditing(true);
     setEditVideoId(video.video_id);
 
@@ -185,7 +185,7 @@ const Episode = () => {
       let formData = new FormData();
 
       formData.append("title", title);
-      formData.append("episode_name", episodeName); // Add episode name
+      formData.append("episode_name", episodeName);
       formData.append("description", description);
       formData.append("series_id", seriesId);
       formData.append("session_id", sessionId);
@@ -334,12 +334,15 @@ const Episode = () => {
 
         <Modal.Body>
           <form onSubmit={handleFormSubmit}>
+            {/* Series */}
             <div className="mb-3">
               <label className="form-label">Series</label>
               <select
                 className="form-select"
                 value={seriesId}
-                onChange={handleSeriesChange}
+                onChange={(e) => {
+                  handleSeriesChange(e);
+                }}
                 required
               >
                 <option value="">Select Series</option>
@@ -351,6 +354,7 @@ const Episode = () => {
               </select>
             </div>
 
+            {/* Episode Name */}
             <div className="mb-3">
               <label className="form-label">Episode Name</label>
               <input
@@ -362,17 +366,25 @@ const Episode = () => {
               />
             </div>
 
+            {/* Category */}
             <div className="mb-3">
               <label className="form-label">Category</label>
-              <div className="form-control bg-light">
-                {
-                  categoriesList.find(
-                    (cat) => String(cat.id) === String(categoryId)
-                  )?.name || "N/A"
-                }
-              </div>
+              <select
+                className="form-select"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                required
+              >
+                <option value="">Select Category</option>
+                {categoriesList.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
+            {/* Season */}
             <div className="mb-3">
               <label className="form-label">Season</label>
               <select
@@ -390,6 +402,7 @@ const Episode = () => {
               </select>
             </div>
 
+            {/* Title */}
             <div className="mb-3">
               <label className="form-label">Title</label>
               <input
@@ -401,6 +414,7 @@ const Episode = () => {
               />
             </div>
 
+            {/* Description */}
             <div className="mb-3">
               <label className="form-label">Description</label>
               <textarea
@@ -411,6 +425,7 @@ const Episode = () => {
               ></textarea>
             </div>
 
+            {/* Video Upload Toggle */}
             <div className="mb-3 form-check form-switch">
               <input
                 className="form-check-input"
@@ -424,6 +439,7 @@ const Episode = () => {
               </label>
             </div>
 
+            {/* Video File or URL */}
             {useFileUpload ? (
               <div className="mb-3">
                 <label>Video File (Max 50MB)</label>
@@ -447,6 +463,7 @@ const Episode = () => {
               </div>
             )}
 
+            {/* Video Preview */}
             {videoPreview && (
               <video
                 src={videoPreview}
@@ -456,6 +473,7 @@ const Episode = () => {
               ></video>
             )}
 
+            {/* Episode Image */}
             <div className="mb-3">
               <label>Episode Image</label>
               <input
@@ -466,6 +484,7 @@ const Episode = () => {
               />
             </div>
 
+            {/* Image Preview */}
             {imagePreview && (
               <img
                 src={imagePreview}
@@ -475,6 +494,7 @@ const Episode = () => {
               />
             )}
 
+            {/* Submit Button */}
             <Button
               type="submit"
               variant="primary"
@@ -496,7 +516,7 @@ const Episode = () => {
         </Modal.Body>
       </Modal>
 
-      {/* Toast */}
+      {/* Toast Container */}
       <ToastContainer theme="colored" newestOnTop />
     </div>
   );

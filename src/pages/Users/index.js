@@ -16,7 +16,7 @@ const User = () => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await fetch(`${API_URL}/users-list`);
+                const response = await fetch(`${API_URL}/admin-list`);
                 const data = await response.json();
                 if (data.status) {
                     setUsers(data.data);
